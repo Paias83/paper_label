@@ -1,0 +1,60 @@
+COMO PROMOVER UM CADASTRO A ADMIN
+==================================
+
+Pré-requisito: o trigger "on_auth_user_created" já deve estar rodado no banco
+(ele cria automaticamente uma linha em "profiles" com role = 'cliente' para
+todo novo cadastro). Sem isso, a pessoa pode não ter uma linha em "profiles"
+ainda — nesse caso use a opção B abaixo.
+
+Link do SQL Editor do projeto:
+https://supabase.com/dashboard/project/yzbgjhstwylnmhquxalq/sql/new
+
+--------------------------------------------------------------
+PASSO 1 — Peça para a pessoa se cadastrar
+--------------------------------------------------------------
+Ela deve criar a conta pela própria loja, na página /entrar, usando o
+e-mail e senha dela. Isso cria o usuário em auth.users e, com o trigger
+ativo, também cria a linha correspondente em profiles (role = 'cliente').
+
+--------------------------------------------------------------
+PASSO 2 — Promova o e-mail a admin
+--------------------------------------------------------------
+No SQL Editor do Supabase, rode (trocando o e-mail):
+
+  update profiles
+  set role = 'admin'
+  where id = (select id from auth.users where email = 'pessoa@exemplo.com');
+
+--------------------------------------------------------------
+OPÇÃO B — Se a linha em profiles ainda não existir
+--------------------------------------------------------------
+(por exemplo, se o trigger ainda não tinha sido criado quando a pessoa se
+cadastrou). Rode este comando no lugar do Passo 2 — ele cria a linha se
+não existir, ou atualiza para admin se já existir:
+
+  insert into profiles (id, role)
+  select id, 'admin' from auth.users where email = 'pessoa@exemplo.com'
+  on conflict (id) do update set role = 'admin';
+
+--------------------------------------------------------------
+PASSO 3 — Confirme a promoção
+--------------------------------------------------------------
+  select p.role, u.email
+  from profiles p
+  join auth.users u on u.id = p.id
+  where u.email = 'pessoa@exemplo.com';
+
+Deve mostrar role = admin.
+
+--------------------------------------------------------------
+PASSO 4 — Acesse o painel
+--------------------------------------------------------------
+A pessoa deve entrar em /entrar com o e-mail e senha dela, e depois
+acessar /admin (ou clicar no botão "Admin" no topo do site).
+
+--------------------------------------------------------------
+Para rebaixar um admin de volta a cliente
+--------------------------------------------------------------
+  update profiles
+  set role = 'cliente'
+  where id = (select id from auth.users where email = 'pessoa@exemplo.com');
