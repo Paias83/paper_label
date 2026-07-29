@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { CartProvider } from './context/CartContext'
+import { AuthProvider } from './context/AuthContext'
 
 import StoreLayout from './pages/store/StoreLayout'
 import Home from './pages/store/Home'
@@ -13,31 +14,45 @@ import AdminLayout from './pages/admin/AdminLayout'
 import ProductList from './pages/admin/ProductList'
 import ProductForm from './pages/admin/ProductForm'
 import Orders from './pages/admin/Orders'
+import SuppliersList from './pages/admin/suppliers/SuppliersList'
+import SupplierForm from './pages/admin/suppliers/SupplierForm'
+import MaterialsList from './pages/admin/stock/MaterialsList'
+import MaterialForm from './pages/admin/stock/MaterialForm'
+import Movements from './pages/admin/stock/Movements'
 
 export default function App() {
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Loja pública */}
-          <Route element={<StoreLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/catalogo" element={<Catalog />} />
-            <Route path="/produto/:id" element={<ProductPage />} />
-            <Route path="/carrinho" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/entrar" element={<Login />} />
-          </Route>
+    <AuthProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Loja pública */}
+            <Route element={<StoreLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/catalogo" element={<Catalog />} />
+              <Route path="/produto/:id" element={<ProductPage />} />
+              <Route path="/carrinho" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/entrar" element={<Login />} />
+            </Route>
 
-          {/* Painel administrativo — proteger com checagem de role=admin */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<ProductList />} />
-            <Route path="produtos/novo" element={<ProductForm />} />
-            <Route path="produtos/:id" element={<ProductForm />} />
-            <Route path="pedidos" element={<Orders />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </CartProvider>
+            {/* Painel administrativo — acesso restrito a role=admin (checagem em AdminLayout) */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<ProductList />} />
+              <Route path="produtos/novo" element={<ProductForm />} />
+              <Route path="produtos/:id" element={<ProductForm />} />
+              <Route path="pedidos" element={<Orders />} />
+              <Route path="fornecedores" element={<SuppliersList />} />
+              <Route path="fornecedores/novo" element={<SupplierForm />} />
+              <Route path="fornecedores/:id" element={<SupplierForm />} />
+              <Route path="estoque" element={<MaterialsList />} />
+              <Route path="estoque/novo" element={<MaterialForm />} />
+              <Route path="estoque/movimentacoes" element={<Movements />} />
+              <Route path="estoque/:id" element={<MaterialForm />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </CartProvider>
+    </AuthProvider>
   )
 }

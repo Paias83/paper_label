@@ -1,13 +1,65 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { supabase, type Product } from '../../lib/supabase'
+import { Link, useSearchParams } from 'react-router-dom'
+import { supabase, type Category, type Product } from '../../lib/supabase'
+import FeaturedCarousel from '../../components/FeaturedCarousel'
+import CategoryNav from '../../components/CategoryNav'
 
 export default function Home() {
-  const [featured, setFeatured] = useState<Product[]>([])
+  const [searchParams] = useSearchParams()
+  const categorySlug = searchParams.get('categoria')
+
+  const [categories, setCategories] = useState<Category[]>([])
+  const [carouselProducts, setCarouselProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function load() {
+    async function loadCategories() {
+      const { data, error } = await supabase.from('categories').select('*').order('name')
+      if (error) console.error(error)
+      setCategories(data ?? [])
+    }
+    loadCategories()
+  }, [])
+
+  useEffect(() => {
+    async function loadCarousel() {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('active', true)
+        .eq('featured', true)
+        .order('created_at', { ascending: false })
+        .limit(8)
+      if (error) console.error(error)
+      setCarouselProducts(data ?? [])
+    }
+    loadCarousel()
+  }, [])
+
+  useEffect(() => {
+    async function loadProducts() {
+      setLoading(true)
+
+      if (categorySlug) {
+        const category = categories.find((c) => c.slug === categorySlug)
+        if (!category) {
+          setProducts([])
+          setLoading(false)
+          return
+        }
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('active', true)
+          .eq('category_id', category.id)
+          .order('created_at', { ascending: false })
+        if (error) console.error(error)
+        setProducts(data ?? [])
+        setLoading(false)
+        return
+      }
+
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -19,12 +71,11 @@ export default function Home() {
       if (error) console.error(error)
 
       if (data && data.length > 0) {
-        setFeatured(data)
+        setProducts(data)
         setLoading(false)
         return
       }
 
-      // Nenhum produto marcado como destaque ainda — mostra os mais recentes
       const { data: recent, error: recentError } = await supabase
         .from('products')
         .select('*')
@@ -33,37 +84,53 @@ export default function Home() {
         .limit(4)
 
       if (recentError) console.error(recentError)
-      setFeatured(recent ?? [])
+      setProducts(recent ?? [])
       setLoading(false)
     }
-    load()
-  }, [])
+
+    if (categorySlug && categories.length === 0) return
+    loadProducts()
+  }, [categorySlug, categories])
+
+  const activeCategory = categorySlug ? categories.find((c) => c.slug === categorySlug) : null
+  const sectionTitle = activeCategory ? activeCategory.name : 'Em destaque'
 
   return (
     <div>
-      <section className="hero container">
-        <div>
-          <p className="eyebrow">Papelaria fina, feita para durar</p>
-          <h1 style={{ fontSize: '3rem' }}>
-            Cada folha, cada capa, escolhida com a mesma atenção de quem escreve.
-          </h1>
-          <p style={{ maxWidth: 480, color: 'var(--charcoal)' }}>
-            Cadernos encadernados à mão, papelaria de convite e acessórios de escrita —
-            selecionados para quem trata o papel como objeto, não como consumível.
+      <FeaturedCarousel products={carouselProducts} />
+
+      <CategoryNav categories={categories} activeSlug={categorySlug} />
+
+      <section>
+        <div className="section-heading container">
+          <h2>{sectionTitle}</h2>
+        </div>
+
+        {loading ? (
+          <p className="container" style={{ color: 'var(--charcoal)' }}>
+            Carregando produtos…
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 24, flexWrap: 'wrap' }}>
-            <Link to="/catalogo" className="seal-button">
-              Ver a coleção
-            </Link>
-            <a href="#destaques" style={{ fontSize: '0.9rem', textDecoration: 'underline' }}>
-              Peças em destaque
-            </a>
+        ) : products.length === 0 ? (
+          <p className="container" style={{ color: 'var(--charcoal)' }}>
+            {activeCategory
+              ? 'Nenhum produto nesta categoria ainda.'
+              : 'Nenhum produto cadastrado ainda. Cadastre peças no painel administrativo para exibi-las aqui.'}
+          </p>
+        ) : (
+          <div className="product-grid container">
+            {products.map((p) => (
+              <Link key={p.id} to={`/produto/${p.id}`} className="product-card">
+                <img src={p.images?.[0] ?? ''} alt={p.name} />
+                <div className="body">
+                  <h3>{p.name}</h3>
+                  <span className="price">
+                    {p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
-        </div>
-        <div className="hero-art" aria-hidden="true">
-          <span className="hero-art-mark">P</span>
-          <div className="deckle-divider" style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }} />
-        </div>
+        )}
       </section>
 
       <section className="value-props container">
@@ -88,39 +155,6 @@ export default function Home() {
             Lacre de cera e papel de seda em toda encomenda, sem custo adicional.
           </p>
         </div>
-      </section>
-
-      <section id="destaques">
-        <div className="section-heading container">
-          <h2>Em destaque</h2>
-          <Link to="/catalogo" style={{ fontSize: '0.9rem' }}>
-            Ver tudo →
-          </Link>
-        </div>
-
-        {loading ? (
-          <p className="container" style={{ color: 'var(--charcoal)' }}>
-            Carregando peças em destaque…
-          </p>
-        ) : featured.length === 0 ? (
-          <p className="container" style={{ color: 'var(--charcoal)' }}>
-            Nenhum produto cadastrado ainda. Cadastre peças no painel administrativo para exibi-las aqui.
-          </p>
-        ) : (
-          <div className="product-grid container">
-            {featured.map((p) => (
-              <Link key={p.id} to={`/produto/${p.id}`} className="product-card">
-                <img src={p.images?.[0] ?? ''} alt={p.name} />
-                <div className="body">
-                  <h3>{p.name}</h3>
-                  <span className="price">
-                    {p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
       </section>
     </div>
   )

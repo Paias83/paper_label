@@ -1,27 +1,41 @@
 import { Link, NavLink } from 'react-router-dom'
+import { LogIn, ShoppingBag, UserRound } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 
 export default function StoreHeader() {
   const { items } = useCart()
+  const { user, loading, signOut } = useAuth()
   const count = items.reduce((sum, i) => sum + i.quantity, 0)
 
   return (
     <header className="site-header">
-      <Link to="/" className="logo">
-        Papelaria de Luxo
-      </Link>
       <nav>
-        <NavLink to="/catalogo">Catálogo</NavLink>
         <NavLink to="/admin">Admin</NavLink>
-        <NavLink to="/entrar">Entrar</NavLink>
+      </nav>
+      <Link to="/" className="logo">
+        Studio Paper
+      </Link>
+      <div className="header-actions">
+        {!loading && user ? (
+          <div className="header-account">
+            <UserRound size={18} />
+            <span>{user.email?.split('@')[0]}</span>
+            <button className="header-signout" onClick={() => signOut()}>
+              Sair
+            </button>
+          </div>
+        ) : (
+          <Link to="/entrar" className="header-action">
+            <LogIn size={18} />
+            Entrar / Cadastrar
+          </Link>
+        )}
         <Link to="/carrinho" className="cart-link" aria-label="Ver carrinho">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-            <path d="M6 8h12l-1 12a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 8Z" strokeLinejoin="round" />
-            <path d="M9 8V6a3 3 0 0 1 6 0v2" strokeLinecap="round" />
-          </svg>
+          <ShoppingBag size={20} strokeWidth={1.6} />
           {count > 0 && <span className="cart-count">{count}</span>}
         </Link>
-      </nav>
+      </div>
     </header>
   )
 }

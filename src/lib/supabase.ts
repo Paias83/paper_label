@@ -40,3 +40,39 @@ export type Order = {
   mp_payment_id: string | null
   created_at: string
 }
+
+export type Supplier = {
+  id: string
+  name: string
+  contact_name: string | null
+  phone: string | null
+  email: string | null
+  document: string | null
+  notes: string | null
+  created_at: string
+}
+
+export type RawMaterial = {
+  id: string
+  name: string
+  unit: string
+  stock: number
+  min_stock: number
+  cost_price: number
+  supplier_id: string | null
+  notes: string | null
+  active: boolean
+  created_at: string
+}
+
+export type StockMovement = {
+  id: string
+  material_id: string
+  type: 'entrada' | 'saida'
+  quantity: number
+  unit_cost: number | null
+  supplier_id: string | null
+  note: string | null
+  created_by: string | null
+  created_at: string
+}

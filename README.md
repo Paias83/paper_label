@@ -1,4 +1,4 @@
-# Papelaria de Luxo — scaffold inicial
+# Studio Paper — scaffold inicial
 
 Loja de papelaria de luxo: catálogo, carrinho, cadastro de usuário, checkout
 com Mercado Pago e painel administrativo para gestão de produtos e pedidos.
@@ -22,7 +22,7 @@ com Mercado Pago e painel administrativo para gestão de produtos e pedidos.
 5. Para virar administrador, cadastre-se pela tela `/entrar` e depois,
    no SQL Editor do Supabase, rode:
    ```sql
-   update profiles set role = 'admin' where id = 'SEU_USER_ID';
+   update profiles set role = 'admin' where id = 'admin';
    ```
    (o `user_id` aparece em Authentication > Users)
 

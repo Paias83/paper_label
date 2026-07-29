@@ -68,14 +68,21 @@ export default function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          Papelaria de Luxo
+          Studio Paper
           <span>Administração</span>
         </div>
         <nav className="admin-nav">
+          <span className="admin-nav-label">Catálogo</span>
           <NavLink to="/admin" end>
             Produtos
           </NavLink>
           <NavLink to="/admin/produtos/novo">+ Novo produto</NavLink>
+
+          <span className="admin-nav-label">Estoque</span>
+          <NavLink to="/admin/estoque">Matérias-primas</NavLink>
+          <NavLink to="/admin/fornecedores">Fornecedores</NavLink>
+
+          <span className="admin-nav-label">Vendas</span>
           <NavLink to="/admin/pedidos">Pedidos</NavLink>
         </nav>
         <div className="admin-sidebar-footer">

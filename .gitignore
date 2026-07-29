@@ -5,6 +5,11 @@ dist-ssr
 
 .env
 
+# Fonte July It — licença gratuita só para uso pessoal, aguardando confirmação
+# de licença comercial antes de versionar no repositório (que é público).
+public/fonts/
+tsconfig.tsbuildinfo
+
 .vscode/*
 !.vscode/extensions.json
 .idea
