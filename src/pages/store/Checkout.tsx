@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
+import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 
 export default function Checkout() {
   const { items, total } = useCart()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
 
   async function handlePagar() {
@@ -41,9 +44,18 @@ export default function Checkout() {
         </strong>
       </p>
       {/* TODO: formulário de endereço de entrega, salvo em profiles.addresses */}
-      <button className="seal-button" onClick={handlePagar} disabled={loading}>
-        {loading ? 'Redirecionando…' : 'Pagar com Mercado Pago'}
-      </button>
+      {!authLoading && !user ? (
+        <div>
+          <p style={{ color: 'var(--charcoal)' }}>Entre na sua conta para finalizar a compra.</p>
+          <Link to="/entrar" className="seal-button">
+            Entrar
+          </Link>
+        </div>
+      ) : (
+        <button className="seal-button" onClick={handlePagar} disabled={loading || authLoading}>
+          {loading ? 'Redirecionando…' : 'Pagar com Mercado Pago'}
+        </button>
+      )}
     </div>
   )
 }

@@ -19,6 +19,7 @@ import SupplierForm from './pages/admin/suppliers/SupplierForm'
 import MaterialsList from './pages/admin/stock/MaterialsList'
 import MaterialForm from './pages/admin/stock/MaterialForm'
 import Movements from './pages/admin/stock/Movements'
+import PurchaseNeeds from './pages/admin/stock/PurchaseNeeds'
 
 export default function App() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="estoque" element={<MaterialsList />} />
               <Route path="estoque/novo" element={<MaterialForm />} />
               <Route path="estoque/movimentacoes" element={<Movements />} />
+              <Route path="estoque/necessidades-de-compra" element={<PurchaseNeeds />} />
               <Route path="estoque/:id" element={<MaterialForm />} />
             </Route>
           </Routes>

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, type Product } from '../../lib/supabase'
+import ProductionModal from './ProductionModal'
 
 export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
+  const [producing, setProducing] = useState<Product | null>(null)
 
   async function load() {
     const { data, error } = await supabase
@@ -20,7 +22,9 @@ export default function ProductList() {
   }, [])
 
   // Edição rápida direto na lista — o objetivo é que a pessoa
-  // leiga nunca precise abrir um formulário só pra mudar preço/estoque.
+  // leiga nunca precise abrir um formulário só pra mudar preço.
+  // Estoque não entra aqui: só sobe via "+ Produção" (consome a
+  // ficha técnica) pra não desincronizar da matéria-prima.
   async function updateField(id: string, field: keyof Product, value: unknown) {
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)))
     const { error } = await supabase.from('products').update({ [field]: value }).eq('id', id)
@@ -90,11 +94,7 @@ export default function ProductList() {
                   />
                 </td>
                 <td>
-                  <input
-                    type="number"
-                    value={p.stock}
-                    onChange={(e) => updateField(p.id, 'stock', Number(e.target.value))}
-                  />
+                  <span className={`stock-qty${p.stock <= 0 ? ' stock-low' : ''}`}>{p.stock}</span>
                 </td>
                 <td>
                   <label className="toggle-switch">
@@ -107,9 +107,14 @@ export default function ProductList() {
                   </label>
                 </td>
                 <td>
-                  <Link to={`/admin/produtos/${p.id}`} className="table-action-link">
-                    Editar
-                  </Link>
+                  <div className="movement-actions">
+                    <button type="button" className="entrada" onClick={() => setProducing(p)}>
+                      + Produção
+                    </button>
+                    <Link to={`/admin/produtos/${p.id}`} className="table-action-link">
+                      Editar
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -123,6 +128,17 @@ export default function ProductList() {
           </tbody>
         </table>
       </div>
+
+      {producing && (
+        <ProductionModal
+          product={producing}
+          onClose={() => setProducing(null)}
+          onSaved={() => {
+            setProducing(null)
+            load()
+          }}
+        />
+      )}
     </div>
   )
 }

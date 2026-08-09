@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { supabase, type Category } from '../../lib/supabase'
+import { supabase, type Category, type RawMaterial } from '../../lib/supabase'
 
 const emptyForm = {
   name: '',
@@ -12,6 +12,8 @@ const emptyForm = {
   active: true,
   featured: false,
 }
+
+type RecipeRow = { material_id: string; quantity: number }
 
 export default function ProductForm() {
   const { id } = useParams()
@@ -25,6 +27,8 @@ export default function ProductForm() {
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [savingCategory, setSavingCategory] = useState(false)
+  const [materials, setMaterials] = useState<RawMaterial[]>([])
+  const [recipe, setRecipe] = useState<RecipeRow[]>([])
 
   useEffect(() => {
     supabase
@@ -32,7 +36,23 @@ export default function ProductForm() {
       .select('*')
       .order('name')
       .then(({ data }) => setCategories(data ?? []))
+
+    supabase
+      .from('raw_materials')
+      .select('*')
+      .eq('active', true)
+      .order('name')
+      .then(({ data }) => setMaterials(data ?? []))
   }, [])
+
+  useEffect(() => {
+    if (!isEditing) return
+    supabase
+      .from('product_materials')
+      .select('material_id, quantity')
+      .eq('product_id', id)
+      .then(({ data }) => setRecipe(data ?? []))
+  }, [id, isEditing])
 
   useEffect(() => {
     if (!isEditing) return
@@ -69,6 +89,10 @@ export default function ProductForm() {
     setForm((f) => ({ ...f, images: f.images.filter((img) => img !== url) }))
   }
 
+  function setCoverImage(url: string) {
+    setForm((f) => ({ ...f, images: [url, ...f.images.filter((img) => img !== url)] }))
+  }
+
   function slugify(text: string) {
     return text
       .toLowerCase()
@@ -100,20 +124,70 @@ export default function ProductForm() {
     setAddingCategory(false)
   }
 
+  function materialCost(materialId: string) {
+    return materials.find((m) => m.id === materialId)?.cost_price ?? 0
+  }
+
+  function addRecipeRow() {
+    setRecipe((rows) => [...rows, { material_id: '', quantity: 1 }])
+  }
+
+  function updateRecipeRow(index: number, changes: Partial<RecipeRow>) {
+    setRecipe((rows) => rows.map((row, i) => (i === index ? { ...row, ...changes } : row)))
+  }
+
+  // Para matéria-prima em kWh, a quantidade é armazenada em horas —
+  // o custo por hora já está salvo como custo unitário da matéria-prima.
+  function updateRecipeTime(index: number, changes: { hours?: number; minutes?: number }) {
+    setRecipe((rows) =>
+      rows.map((row, i) => {
+        if (i !== index) return row
+        const current = row.quantity || 0
+        const currentHours = Math.floor(current)
+        const currentMinutes = Math.round((current - currentHours) * 60)
+        const hours = changes.hours ?? currentHours
+        const minutes = changes.minutes ?? currentMinutes
+        return { ...row, quantity: hours + minutes / 60 }
+      })
+    )
+  }
+
+  function removeRecipeRow(index: number) {
+    setRecipe((rows) => rows.filter((_, i) => i !== index))
+  }
+
+  const totalCost = recipe.reduce((sum, row) => sum + materialCost(row.material_id) * row.quantity, 0)
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const payload = { ...form, category_id: form.category_id || null }
+    const payload = { ...form, category_id: form.category_id || null, cost_price: totalCost }
     const query = isEditing
-      ? supabase.from('products').update(payload).eq('id', id)
-      : supabase.from('products').insert(payload)
-    const { error } = await query
-    setSaving(false)
-    if (error) {
+      ? supabase.from('products').update(payload).eq('id', id).select().single()
+      : supabase.from('products').insert(payload).select().single()
+    const { data, error } = await query
+    if (error || !data) {
+      setSaving(false)
       alert('Não foi possível salvar o produto.')
       console.error(error)
       return
     }
+
+    const validRows = recipe.filter((row) => row.material_id && row.quantity > 0)
+    await supabase.from('product_materials').delete().eq('product_id', data.id)
+    if (validRows.length > 0) {
+      const { error: recipeError } = await supabase.from('product_materials').insert(
+        validRows.map((row) => ({ product_id: data.id, material_id: row.material_id, quantity: row.quantity }))
+      )
+      if (recipeError) {
+        setSaving(false)
+        alert('Produto salvo, mas não foi possível salvar a ficha técnica.')
+        console.error(recipeError)
+        return
+      }
+    }
+
+    setSaving(false)
     navigate('/admin')
   }
 
@@ -241,6 +315,95 @@ export default function ProductForm() {
               </div>
             </div>
           </div>
+
+          <div className="form-card">
+            <h3>Ficha técnica</h3>
+            <p style={{ marginTop: -8, marginBottom: 16, color: 'var(--charcoal)', fontSize: '0.85rem' }}>
+              Matérias-primas usadas para fabricar este produto — define o preço de custo.
+            </p>
+            {recipe.map((row, index) => {
+              const material = materials.find((m) => m.id === row.material_id)
+              const lineCost = materialCost(row.material_id) * row.quantity
+              return (
+                <div key={index} className="form-row recipe-row">
+                  <div className="form-field recipe-field-material">
+                    <label className="form-field-label">Matéria-prima</label>
+                    <select
+                      value={row.material_id}
+                      onChange={(e) => updateRecipeRow(index, { material_id: e.target.value })}
+                    >
+                      <option value="">Selecione…</option>
+                      {materials.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {material?.unit === 'kWh' ? (
+                    <>
+                      <div className="form-field recipe-field-narrow">
+                        <label className="form-field-label">Horas</label>
+                        <input
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={Math.floor(row.quantity)}
+                          onChange={(e) => updateRecipeTime(index, { hours: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div className="form-field recipe-field-narrow">
+                        <label className="form-field-label">Minutos</label>
+                        <input
+                          type="number"
+                          step="1"
+                          min="0"
+                          max="59"
+                          value={Math.round((row.quantity - Math.floor(row.quantity)) * 60)}
+                          onChange={(e) => updateRecipeTime(index, { minutes: Number(e.target.value) })}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="form-field recipe-field-qty">
+                      <label className="form-field-label">Qtd. {material ? `(${material.unit})` : ''}</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        value={row.quantity}
+                        onChange={(e) => updateRecipeRow(index, { quantity: Number(e.target.value) })}
+                      />
+                    </div>
+                  )}
+                  <div className="form-field recipe-field-cost">
+                    <label className="form-field-label">Preço fracionado</label>
+                    <p style={{ margin: '0 0 8px' }}>
+                      {lineCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="icon-button recipe-field-remove"
+                    aria-label="Remover material"
+                    title="Remover material"
+                    onClick={() => removeRecipeRow(index)}
+                  >
+                    ×
+                  </button>
+                </div>
+              )
+            })}
+            <button type="button" className="ghost-button small" onClick={addRecipeRow}>
+              + Adicionar material
+            </button>
+            <div className="form-field" style={{ marginTop: 16 }}>
+              <span className="form-field-label">Preço de custo do produto</span>
+              <p style={{ margin: 0, fontWeight: 600 }}>
+                {totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -255,12 +418,23 @@ export default function ProductForm() {
             </label>
             {form.images.length > 0 && (
               <div className="image-grid">
-                {form.images.map((url) => (
-                  <div key={url} className="image-thumb">
+                {form.images.map((url, index) => (
+                  <div key={url} className={`image-thumb${index === 0 ? ' is-cover' : ''}`}>
                     <img src={url} alt="" />
                     <button type="button" onClick={() => removeImage(url)} aria-label="Remover foto">
                       ×
                     </button>
+                    {index === 0 ? (
+                      <span className="cover-badge">Capa</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="set-cover-button"
+                        onClick={() => setCoverImage(url)}
+                      >
+                        Definir como capa
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

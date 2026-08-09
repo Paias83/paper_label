@@ -80,6 +80,7 @@ export default function AdminLayout() {
 
           <span className="admin-nav-label">Estoque</span>
           <NavLink to="/admin/estoque">Matérias-primas</NavLink>
+          <NavLink to="/admin/estoque/necessidades-de-compra">Necessidades de compra</NavLink>
           <NavLink to="/admin/fornecedores">Fornecedores</NavLink>
 
           <span className="admin-nav-label">Vendas</span>

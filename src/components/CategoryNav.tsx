@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Cake, Candy, PartyPopper, Star, Tag, Wand2, type LucideIcon } from 'lucide-react'
+import { Cake, Candy, PartyPopper, Sparkles, Star, Tag, Wand2, type LucideIcon } from 'lucide-react'
 import type { Category } from '../lib/supabase'
 
 type CategoryNavProps = {
@@ -12,6 +12,7 @@ const ICONS_BY_SLUG: Record<string, LucideIcon> = {
   'topo-de-doce': Candy,
   'kit-de-festa': PartyPopper,
   personalizados: Wand2,
+  decoracao: Sparkles,
 }
 
 function getCategoryIcon(slug: string): LucideIcon {

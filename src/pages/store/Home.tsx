@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { ShoppingBag } from 'lucide-react'
 import { supabase, type Category, type Product } from '../../lib/supabase'
 import FeaturedCarousel from '../../components/FeaturedCarousel'
 import CategoryNav from '../../components/CategoryNav'
+import { useCart } from '../../context/CartContext'
 
 export default function Home() {
   const [searchParams] = useSearchParams()
   const categorySlug = searchParams.get('categoria')
+  const { addItem } = useCart()
 
   const [categories, setCategories] = useState<Category[]>([])
   const [carouselProducts, setCarouselProducts] = useState<Product[]>([])
@@ -120,12 +123,30 @@ export default function Home() {
           <div className="product-grid container">
             {products.map((p) => (
               <Link key={p.id} to={`/produto/${p.id}`} className="product-card">
-                <img src={p.images?.[0] ?? ''} alt={p.name} />
+                <div className="image-wrap">
+                  <img src={p.images?.[0] ?? ''} alt={p.name} />
+                </div>
                 <div className="body">
                   <h3>{p.name}</h3>
-                  <span className="price">
-                    {p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </span>
+                  <div className="product-card-footer">
+                    <span className="price">
+                      {p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                    <button
+                      type="button"
+                      className="add-to-cart-button"
+                      aria-label={`Adicionar ${p.name} ao carrinho`}
+                      title="Adicionar ao carrinho"
+                      disabled={p.stock <= 0}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        addItem(p)
+                      }}
+                    >
+                      <ShoppingBag size={16} strokeWidth={1.6} />
+                    </button>
+                  </div>
                 </div>
               </Link>
             ))}

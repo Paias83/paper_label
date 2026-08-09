@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, type Supplier } from '../../../lib/supabase'
 
-const UNITS = ['un', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'cx', 'pct']
+const UNITS = ['un', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'cx', 'pct', 'kWh']
 
 const emptyForm = {
   name: '',
@@ -10,6 +10,8 @@ const emptyForm = {
   min_stock: 0,
   cost_price: 0,
   supplier_id: '',
+  color: '',
+  brand: '',
   notes: '',
   active: true,
 }
@@ -52,7 +54,12 @@ export default function MaterialForm() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const payload = { ...form, supplier_id: form.supplier_id || null }
+    const payload = {
+      ...form,
+      supplier_id: form.supplier_id || null,
+      color: form.color || null,
+      brand: form.brand || null,
+    }
 
     if (isEditing) {
       const { error } = await supabase.from('raw_materials').update(payload).eq('id', id)
@@ -118,6 +125,31 @@ export default function MaterialForm() {
 
         <div className="form-row">
           <div className="form-field">
+            <label className="form-field-label" htmlFor="color">
+              Cor
+            </label>
+            <input
+              id="color"
+              type="text"
+              value={form.color ?? ''}
+              onChange={(e) => setForm({ ...form, color: e.target.value })}
+            />
+          </div>
+          <div className="form-field">
+            <label className="form-field-label" htmlFor="brand">
+              Marca
+            </label>
+            <input
+              id="brand"
+              type="text"
+              value={form.brand ?? ''}
+              onChange={(e) => setForm({ ...form, brand: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-field">
             <label className="form-field-label" htmlFor="unit">
               Unidade
             </label>
@@ -147,7 +179,7 @@ export default function MaterialForm() {
         <div className="form-row">
           <div className="form-field">
             <label className="form-field-label" htmlFor="cost_price">
-              Custo unitário
+              {form.unit === 'kWh' ? 'Custo por hora' : 'Custo unitário'}
             </label>
             <div className="price-field">
               <span className="prefix">R$</span>

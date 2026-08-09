@@ -18,6 +18,7 @@ export type Product = {
   name: string
   description: string | null
   price: number
+  cost_price: number
   category_id: string | null
   stock: number
   images: string[]
@@ -41,6 +42,33 @@ export type Order = {
   created_at: string
 }
 
+export type OrderItem = {
+  id: string
+  order_id: string
+  product_id: string
+  quantity: number
+  price_at_purchase: number
+  quantity_from_stock: number
+  fulfillment_status: 'estoque_pronto' | 'empenhado' | 'aguardando_compra' | null
+}
+
+export type OrderItemReservation = {
+  id: string
+  order_item_id: string
+  status: 'empenhado' | 'aguardando_compra'
+  quantity: number
+  created_at: string
+}
+
+export type PurchaseNeed = {
+  id: string
+  material_id: string
+  quantity: number
+  status: 'pendente' | 'resolvido'
+  created_at: string
+  resolved_at: string | null
+}
+
 export type Supplier = {
   id: string
   name: string
@@ -60,6 +88,8 @@ export type RawMaterial = {
   min_stock: number
   cost_price: number
   supplier_id: string | null
+  color: string | null
+  brand: string | null
   notes: string | null
   active: boolean
   created_at: string
@@ -72,6 +102,23 @@ export type StockMovement = {
   quantity: number
   unit_cost: number | null
   supplier_id: string | null
+  note: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type ProductMaterial = {
+  id: string
+  product_id: string
+  material_id: string
+  quantity: number
+  created_at: string
+}
+
+export type ProductProduction = {
+  id: string
+  product_id: string
+  quantity: number
   note: string | null
   created_by: string | null
   created_at: string

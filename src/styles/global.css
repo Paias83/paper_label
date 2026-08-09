@@ -62,8 +62,18 @@ h1, h2, h3 {
 a { color: inherit; }
 
 .price {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-weight: 500;
+  letter-spacing: 0.01em;
   font-size: 0.95em;
+}
+
+/* No admin, preço continua em mono — combina com o resto da grade
+   operacional (SKUs, quantidades, custos) */
+.admin-main .price {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: normal;
 }
 
 /* Divisor "borda desfiada" — remete ao papel cortado à mão,
@@ -382,7 +392,7 @@ a { color: inherit; }
   top: 78px;
   z-index: 9;
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-3);
   overflow-x: auto;
   padding: var(--space-2) var(--space-3);
   background: var(--paper);
@@ -402,23 +412,23 @@ a { color: inherit; }
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 8px 16px;
-  border-radius: 999px;
-  background: rgba(176, 141, 87, 0.08);
+  padding: 10px 4px;
+  border-bottom: 1px solid transparent;
+  background: none;
   color: var(--charcoal);
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .category-pill:hover {
-  background: rgba(176, 141, 87, 0.18);
   color: var(--ink);
+  border-color: var(--hairline);
 }
 
 .category-pill.active {
-  background: rgba(107, 31, 42, 0.12);
   color: var(--wine);
   font-weight: 500;
+  border-color: var(--wine);
 }
 
 /* ============================================================
@@ -455,22 +465,31 @@ a { color: inherit; }
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4) var(--space-3);
   padding-bottom: var(--space-5);
 }
 
 .product-card {
   display: block;
-  background: var(--paper-raised);
-  border: 1px solid var(--hairline);
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s ease;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .product-card:hover {
-  border-color: var(--brass);
+  transform: translateY(-6px);
+}
+
+.product-card .image-wrap {
+  overflow: hidden;
+  background: var(--hairline);
+  box-shadow: 0 1px 2px rgba(28, 27, 25, 0.08);
+  transition: box-shadow 0.35s ease;
+}
+
+.product-card:hover .image-wrap {
+  box-shadow: 0 24px 40px -20px rgba(28, 27, 25, 0.35);
 }
 
 .product-card img {
@@ -478,16 +497,61 @@ a { color: inherit; }
   aspect-ratio: 4 / 5;
   object-fit: cover;
   display: block;
-  background: var(--hairline);
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.product-card:hover img {
+  transform: scale(1.05);
 }
 
 .product-card .body {
-  padding: 12px;
+  padding: 14px 2px 0;
 }
 
 .product-card h3 {
-  font-size: 1.05rem;
+  font-size: 1.02rem;
+  font-weight: 500;
   margin: 0 0 4px;
+}
+
+.product-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.add-to-cart-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  background: var(--paper-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, color 0.15s ease;
+}
+
+.add-to-cart-button:hover {
+  background: var(--wine);
+  border-color: var(--wine);
+  color: var(--paper-raised);
+  transform: scale(1.08);
+}
+
+.add-to-cart-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.add-to-cart-button:disabled:hover {
+  background: var(--paper-raised);
+  border-color: var(--hairline);
+  color: var(--ink);
+  transform: none;
 }
 
 @media (max-width: 640px) {
@@ -803,6 +867,41 @@ a { color: inherit; }
   box-shadow: none !important;
 }
 
+.recipe-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.recipe-field-material {
+  flex: 1;
+  min-width: 0;
+}
+
+.recipe-field-narrow {
+  flex: 0 0 64px;
+}
+
+.recipe-field-qty {
+  flex: 0 0 90px;
+}
+
+.recipe-field-cost {
+  flex: 0 0 96px;
+}
+
+.recipe-field-remove {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 640px) {
+  .recipe-row {
+    flex-wrap: wrap;
+  }
+}
+
 .category-row {
   display: flex;
   gap: 8px;
@@ -938,6 +1037,44 @@ a { color: inherit; }
 }
 
 .image-thumb button:hover {
+  background: var(--wine);
+}
+
+.image-thumb.is-cover {
+  border-color: var(--wine);
+  box-shadow: 0 0 0 2px var(--wine);
+}
+
+.cover-badge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: var(--wine);
+  color: var(--paper-raised);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.set-cover-button {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  border: none;
+  background: rgba(28, 27, 25, 0.72);
+  color: var(--paper-raised);
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  padding: 4px 0;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.set-cover-button:hover {
   background: var(--wine);
 }
 
@@ -1261,6 +1398,21 @@ a { color: inherit; }
 }
 
 .type-badge.saida {
+  color: var(--danger);
+  background: rgba(161, 58, 47, 0.1);
+}
+
+.type-badge.estoque_pronto {
+  color: var(--success);
+  background: rgba(63, 93, 67, 0.12);
+}
+
+.type-badge.empenhado {
+  color: var(--brass);
+  background: rgba(176, 141, 87, 0.15);
+}
+
+.type-badge.aguardando_compra {
   color: var(--danger);
   background: rgba(161, 58, 47, 0.1);
 }

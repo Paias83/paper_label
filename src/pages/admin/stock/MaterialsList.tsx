@@ -40,6 +40,9 @@ export default function MaterialsList() {
           <Link to="/admin/estoque/movimentacoes" className="ghost-button">
             Movimentações
           </Link>
+          <Link to="/admin/estoque/necessidades-de-compra" className="ghost-button">
+            Necessidades de compra
+          </Link>
           <Link to="/admin/fornecedores/novo" className="ghost-button">
             + Fornecedor
           </Link>

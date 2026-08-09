@@ -4,6 +4,7 @@ dist-ssr
 *.local
 
 .env
+supabase/.temp/
 
 # Fonte July It — licença gratuita só para uso pessoal, aguardando confirmação
 # de licença comercial antes de versionar no repositório (que é público).
