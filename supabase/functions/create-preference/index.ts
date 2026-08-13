@@ -19,15 +19,30 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 type IncomingItem = { id: string; title: string; quantity: number; unit_price: number }
 
+// Chamada direto do navegador (supabase.functions.invoke) precisa de CORS,
+// incluindo resposta ao preflight OPTIONS — sem isso o navegador bloqueia
+// a requisição antes dela chegar aqui.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 })
+    return new Response('Method Not Allowed', { status: 405, headers: corsHeaders })
   }
 
   try {
     const { items } = (await req.json()) as { items: IncomingItem[] }
     if (!items?.length) {
-      return new Response(JSON.stringify({ error: 'Carrinho vazio.' }), { status: 400 })
+      return new Response(JSON.stringify({ error: 'Carrinho vazio.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Identifica quem está comprando a partir do token que o cliente já
@@ -39,7 +54,10 @@ serve(async (req) => {
       data: { user },
     } = await authClient.auth.getUser()
     if (!user) {
-      return new Response(JSON.stringify({ error: 'É preciso estar logado para comprar.' }), { status: 401 })
+      return new Response(JSON.stringify({ error: 'É preciso estar logado para comprar.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Grava o pedido com a service role — só o servidor pode criar pedidos,
@@ -93,9 +111,12 @@ serve(async (req) => {
 
     const data = await res.json()
     return new Response(JSON.stringify({ init_point: data.init_point, order_id: order.id }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500 })
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })
