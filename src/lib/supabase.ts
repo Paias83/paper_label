@@ -24,6 +24,10 @@ export type Product = {
   images: string[]
   active: boolean
   featured: boolean
+  weight_kg: number
+  width_cm: number
+  height_cm: number
+  length_cm: number
   created_at: string
 }
 
@@ -33,12 +37,27 @@ export type Category = {
   slug: string
 }
 
+export type ShippingAddress = {
+  cep: string
+  street: string
+  number: string
+  complement: string
+  neighborhood: string
+  city: string
+  state: string
+}
+
 export type Order = {
   id: string
   user_id: string
   status: 'pendente' | 'pago' | 'enviado' | 'entregue' | 'cancelado'
   total: number
   mp_payment_id: string | null
+  shipping_cep: string | null
+  shipping_address: ShippingAddress | null
+  shipping_cost: number
+  shipping_service: string | null
+  tracking_code: string | null
   created_at: string
 }
 

@@ -11,6 +11,10 @@ const emptyForm = {
   images: [] as string[],
   active: true,
   featured: false,
+  weight_kg: 0.3,
+  width_cm: 16,
+  height_cm: 4,
+  length_cm: 16,
 }
 
 type RecipeRow = { material_id: string; quantity: number }
@@ -310,6 +314,69 @@ export default function ProductForm() {
                   min="0"
                   value={form.stock}
                   onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
+                  required
+                />
+              </div>
+            </div>
+            <p style={{ marginTop: 8, marginBottom: -8, color: 'var(--charcoal)', fontSize: '0.85rem' }}>
+              Peso e dimensões da embalagem — usados para calcular o frete real na loja.
+            </p>
+            <div className="form-row">
+              <div className="form-field">
+                <label className="form-field-label" htmlFor="weight_kg">
+                  Peso (kg)
+                </label>
+                <input
+                  id="weight_kg"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={form.weight_kg}
+                  onChange={(e) => setForm({ ...form, weight_kg: Number(e.target.value) })}
+                  required
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-field-label" htmlFor="width_cm">
+                  Largura (cm)
+                </label>
+                <input
+                  id="width_cm"
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  value={form.width_cm}
+                  onChange={(e) => setForm({ ...form, width_cm: Number(e.target.value) })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-field">
+                <label className="form-field-label" htmlFor="height_cm">
+                  Altura (cm)
+                </label>
+                <input
+                  id="height_cm"
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  value={form.height_cm}
+                  onChange={(e) => setForm({ ...form, height_cm: Number(e.target.value) })}
+                  required
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-field-label" htmlFor="length_cm">
+                  Comprimento (cm)
+                </label>
+                <input
+                  id="length_cm"
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  value={form.length_cm}
+                  onChange={(e) => setForm({ ...form, length_cm: Number(e.target.value) })}
                   required
                 />
               </div>

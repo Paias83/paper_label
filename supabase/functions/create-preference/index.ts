@@ -18,6 +18,16 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 type IncomingItem = { id: string; title: string; quantity: number; unit_price: number }
+type IncomingShipping = { service_name: string; price: number }
+type IncomingAddress = {
+  cep: string
+  street: string
+  number: string
+  complement: string
+  neighborhood: string
+  city: string
+  state: string
+}
 
 // Chamada direto do navegador (supabase.functions.invoke) precisa de CORS,
 // incluindo resposta ao preflight OPTIONS — sem isso o navegador bloqueia
@@ -37,9 +47,19 @@ serve(async (req) => {
   }
 
   try {
-    const { items } = (await req.json()) as { items: IncomingItem[] }
+    const { items, shipping, address } = (await req.json()) as {
+      items: IncomingItem[]
+      shipping: IncomingShipping
+      address: IncomingAddress
+    }
     if (!items?.length) {
       return new Response(JSON.stringify({ error: 'Carrinho vazio.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    if (!shipping?.price || !address?.cep) {
+      return new Response(JSON.stringify({ error: 'Endereço e frete são obrigatórios.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -63,11 +83,20 @@ serve(async (req) => {
     // Grava o pedido com a service role — só o servidor pode criar pedidos,
     // o cliente não tem policy de insert em orders/order_items.
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-    const total = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
+    const itemsTotal = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
+    const total = itemsTotal + shipping.price
 
     const { data: order, error: orderError } = await admin
       .from('orders')
-      .insert({ user_id: user.id, status: 'pendente', total })
+      .insert({
+        user_id: user.id,
+        status: 'pendente',
+        total,
+        shipping_cep: address.cep,
+        shipping_address: address,
+        shipping_cost: shipping.price,
+        shipping_service: shipping.service_name,
+      })
       .select()
       .single()
     if (orderError || !order) throw orderError ?? new Error('Falha ao criar pedido')
@@ -83,13 +112,22 @@ serve(async (req) => {
     if (itemsError) throw itemsError
 
     const preference = {
-      items: items.map((i) => ({
-        id: i.id,
-        title: i.title,
-        quantity: i.quantity,
-        unit_price: i.unit_price,
-        currency_id: 'BRL',
-      })),
+      items: [
+        ...items.map((i) => ({
+          id: i.id,
+          title: i.title,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+          currency_id: 'BRL',
+        })),
+        {
+          id: 'frete',
+          title: `Frete - ${shipping.service_name}`,
+          quantity: 1,
+          unit_price: shipping.price,
+          currency_id: 'BRL',
+        },
+      ],
       external_reference: order.id,
       notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,
       back_urls: {

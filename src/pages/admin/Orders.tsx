@@ -14,6 +14,8 @@ export default function Orders() {
   const [items, setItems] = useState<OrderItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [trackingDrafts, setTrackingDrafts] = useState<Record<string, string>>({})
+  const [savingTracking, setSavingTracking] = useState<string | null>(null)
 
   async function load() {
     const [ordersRes, itemsRes, productsRes] = await Promise.all([
@@ -33,6 +35,19 @@ export default function Orders() {
   async function updateStatus(id: string, status: Order['status']) {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)))
     await supabase.from('orders').update({ status }).eq('id', id)
+  }
+
+  function trackingDraft(order: Order) {
+    return trackingDrafts[order.id] ?? order.tracking_code ?? ''
+  }
+
+  async function saveTracking(id: string) {
+    const tracking_code = trackingDrafts[id]?.trim()
+    if (!tracking_code) return
+    setSavingTracking(id)
+    await supabase.from('orders').update({ tracking_code }).eq('id', id)
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, tracking_code } : o)))
+    setSavingTracking(null)
   }
 
   const productName = (id: string) => products.find((p) => p.id === id)?.name ?? '—'
@@ -100,6 +115,44 @@ export default function Orders() {
                     <tr>
                       <td></td>
                       <td colSpan={4}>
+                        {o.shipping_address ? (
+                          <div style={{ margin: '8px 0' }}>
+                            <strong>Entrega:</strong>{' '}
+                            {o.shipping_address.street}, {o.shipping_address.number}
+                            {o.shipping_address.complement ? ` - ${o.shipping_address.complement}` : ''} —{' '}
+                            {o.shipping_address.neighborhood}, {o.shipping_address.city}/
+                            {o.shipping_address.state} — CEP {o.shipping_address.cep}
+                            <br />
+                            <strong>Frete:</strong> {o.shipping_service ?? '—'} —{' '}
+                            {o.shipping_cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </div>
+                        ) : (
+                          <p style={{ color: 'var(--charcoal)', margin: '8px 0' }}>
+                            Sem endereço de entrega registrado (pedido anterior a esse fluxo).
+                          </p>
+                        )}
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0' }}>
+                          <strong>Rastreio:</strong>
+                          <input
+                            type="text"
+                            placeholder="Código de rastreio"
+                            value={trackingDraft(o)}
+                            onChange={(e) =>
+                              setTrackingDrafts((prev) => ({ ...prev, [o.id]: e.target.value }))
+                            }
+                            style={{ maxWidth: 200 }}
+                          />
+                          <button
+                            type="button"
+                            className="ghost-button small"
+                            disabled={savingTracking === o.id}
+                            onClick={() => saveTracking(o.id)}
+                          >
+                            {savingTracking === o.id ? 'Salvando…' : 'Salvar'}
+                          </button>
+                        </div>
+
                         {orderItems.length === 0 ? (
                           <p style={{ color: 'var(--charcoal)', margin: '8px 0' }}>
                             Sem itens registrados (pedido criado antes do fluxo atual, ou ainda pendente de pagamento).

@@ -7,7 +7,6 @@ import Home from './pages/store/Home'
 import Catalog from './pages/store/Catalog'
 import ProductPage from './pages/store/ProductPage'
 import Cart from './pages/store/Cart'
-import Checkout from './pages/store/Checkout'
 import Login from './pages/store/Login'
 
 import AdminLayout from './pages/admin/AdminLayout'
@@ -33,7 +32,6 @@ export default function App() {
               <Route path="/catalogo" element={<Catalog />} />
               <Route path="/produto/:id" element={<ProductPage />} />
               <Route path="/carrinho" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
               <Route path="/entrar" element={<Login />} />
             </Route>
 
