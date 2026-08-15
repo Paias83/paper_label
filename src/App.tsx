@@ -8,11 +8,16 @@ import Catalog from './pages/store/Catalog'
 import ProductPage from './pages/store/ProductPage'
 import Cart from './pages/store/Cart'
 import Login from './pages/store/Login'
+import QuoteRequestForm from './pages/store/QuoteRequestForm'
+import MyQuotes from './pages/store/MyQuotes'
+import QuoteThread from './pages/store/QuoteThread'
 
 import AdminLayout from './pages/admin/AdminLayout'
 import ProductList from './pages/admin/ProductList'
 import ProductForm from './pages/admin/ProductForm'
 import Orders from './pages/admin/Orders'
+import Quotes from './pages/admin/Quotes'
+import AdminQuoteThread from './pages/admin/QuoteThread'
 import SuppliersList from './pages/admin/suppliers/SuppliersList'
 import SupplierForm from './pages/admin/suppliers/SupplierForm'
 import MaterialsList from './pages/admin/stock/MaterialsList'
@@ -33,6 +38,9 @@ export default function App() {
               <Route path="/produto/:id" element={<ProductPage />} />
               <Route path="/carrinho" element={<Cart />} />
               <Route path="/entrar" element={<Login />} />
+              <Route path="/personalizados/novo" element={<QuoteRequestForm />} />
+              <Route path="/meus-orcamentos" element={<MyQuotes />} />
+              <Route path="/meus-orcamentos/:id" element={<QuoteThread />} />
             </Route>
 
             {/* Painel administrativo — acesso restrito a role=admin (checagem em AdminLayout) */}
@@ -41,6 +49,8 @@ export default function App() {
               <Route path="produtos/novo" element={<ProductForm />} />
               <Route path="produtos/:id" element={<ProductForm />} />
               <Route path="pedidos" element={<Orders />} />
+              <Route path="orcamentos" element={<Quotes />} />
+              <Route path="orcamentos/:id" element={<AdminQuoteThread />} />
               <Route path="fornecedores" element={<SuppliersList />} />
               <Route path="fornecedores/novo" element={<SupplierForm />} />
               <Route path="fornecedores/:id" element={<SupplierForm />} />

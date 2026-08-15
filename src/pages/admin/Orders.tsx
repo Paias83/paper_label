@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
-import { supabase, type Order, type OrderItem, type Product } from '../../lib/supabase'
+import { supabase, type Order, type OrderItem, type Product, type QuoteRequest } from '../../lib/supabase'
 
 const STATUS_OPTIONS: Order['status'][] = ['pendente', 'pago', 'enviado', 'entregue', 'cancelado']
 
@@ -7,25 +7,29 @@ const FULFILLMENT_LABEL: Record<string, string> = {
   estoque_pronto: 'Estoque pronto',
   empenhado: 'Matéria-prima empenhada',
   aguardando_compra: 'Aguardando compra',
+  personalizado: 'Sob encomenda (orçamento)',
 }
 
 export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [items, setItems] = useState<OrderItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [quotes, setQuotes] = useState<QuoteRequest[]>([])
   const [expanded, setExpanded] = useState<string | null>(null)
   const [trackingDrafts, setTrackingDrafts] = useState<Record<string, string>>({})
   const [savingTracking, setSavingTracking] = useState<string | null>(null)
 
   async function load() {
-    const [ordersRes, itemsRes, productsRes] = await Promise.all([
+    const [ordersRes, itemsRes, productsRes, quotesRes] = await Promise.all([
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
       supabase.from('order_items').select('*'),
       supabase.from('products').select('*'),
+      supabase.from('quote_requests').select('*'),
     ])
     setOrders(ordersRes.data ?? [])
     setItems(itemsRes.data ?? [])
     setProducts(productsRes.data ?? [])
+    setQuotes(quotesRes.data ?? [])
   }
 
   useEffect(() => {
@@ -50,7 +54,14 @@ export default function Orders() {
     setSavingTracking(null)
   }
 
-  const productName = (id: string) => products.find((p) => p.id === id)?.name ?? '—'
+  function itemName(item: OrderItem) {
+    if (item.product_id) return products.find((p) => p.id === item.product_id)?.name ?? '—'
+    if (item.custom_request_id) {
+      const quote = quotes.find((q) => q.id === item.custom_request_id)
+      return quote ? `${quote.title} (orçamento)` : 'Pedido personalizado'
+    }
+    return '—'
+  }
   const itemsForOrder = (orderId: string) => items.filter((i) => i.order_id === orderId)
 
   return (
@@ -170,7 +181,7 @@ export default function Orders() {
                             <tbody>
                               {orderItems.map((it) => (
                                 <tr key={it.id}>
-                                  <td>{productName(it.product_id)}</td>
+                                  <td>{itemName(it)}</td>
                                   <td>{it.quantity}</td>
                                   <td>{it.quantity_from_stock}</td>
                                   <td>

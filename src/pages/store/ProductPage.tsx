@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { supabase, type Product } from '../../lib/supabase'
 import { useCart } from '../../context/CartContext'
 
 export default function ProductPage() {
   const { id } = useParams()
   const [product, setProduct] = useState<Product | null>(null)
+  const [isCustom, setIsCustom] = useState(false)
   const [selectedImage, setSelectedImage] = useState(0)
   const { addItem } = useCart()
 
@@ -15,6 +16,17 @@ export default function ProductPage() {
       if (error) console.error(error)
       else setProduct(data)
       setSelectedImage(0)
+
+      if (data?.category_id) {
+        const { data: category } = await supabase
+          .from('categories')
+          .select('slug')
+          .eq('id', data.category_id)
+          .single()
+        setIsCustom(category?.slug === 'personalizados')
+      } else {
+        setIsCustom(false)
+      }
     }
     if (id) load()
   }, [id])
@@ -58,16 +70,25 @@ export default function ProductPage() {
       <div>
         <h1>{product.name}</h1>
         <p className="price" style={{ fontSize: '1.3rem' }}>
+          {isCustom ? 'A partir de ' : ''}
           {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
         </p>
         <p style={{ color: 'var(--charcoal)', maxWidth: 420, whiteSpace: 'pre-line' }}>
           {product.description}
         </p>
-        <button className="seal-button" onClick={() => addItem(product)}>
-          Adicionar ao carrinho
-        </button>
-        {product.stock <= 0 && (
-          <p style={{ color: 'var(--danger)', marginTop: 8 }}>Fora de estoque no momento.</p>
+        {isCustom ? (
+          <Link to={`/personalizados/novo?produto=${product.id}`} className="seal-button">
+            Solicitar orçamento
+          </Link>
+        ) : (
+          <>
+            <button className="seal-button" onClick={() => addItem(product)}>
+              Adicionar ao carrinho
+            </button>
+            {product.stock <= 0 && (
+              <p style={{ color: 'var(--danger)', marginTop: 8 }}>Fora de estoque no momento.</p>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -6,6 +6,7 @@ type Status = 'checking' | 'allowed' | 'denied' | 'anonymous'
 
 export default function AdminLayout() {
   const [status, setStatus] = useState<Status>('checking')
+  const [pendingQuotes, setPendingQuotes] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -28,6 +29,15 @@ export default function AdminLayout() {
 
       if (!active) return
       setStatus(profile?.role === 'admin' ? 'allowed' : 'denied')
+
+      if (profile?.role === 'admin') {
+        // Orçamentos que ainda não receberam proposta — precisam de atenção.
+        const { count } = await supabase
+          .from('quote_requests')
+          .select('id', { count: 'exact', head: true })
+          .in('status', ['solicitado', 'em_analise'])
+        if (active) setPendingQuotes(count ?? 0)
+      }
     }
 
     checkAccess()
@@ -85,6 +95,10 @@ export default function AdminLayout() {
 
           <span className="admin-nav-label">Vendas</span>
           <NavLink to="/admin/pedidos">Pedidos</NavLink>
+          <NavLink to="/admin/orcamentos">
+            Orçamentos
+            {pendingQuotes > 0 && <span className="nav-badge">{pendingQuotes}</span>}
+          </NavLink>
         </nav>
         <div className="admin-sidebar-footer">
           <Link to="/">Voltar à loja</Link>

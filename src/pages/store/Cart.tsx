@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 import { supabase, type ShippingAddress } from '../../lib/supabase'
+import AddressForm, { isAddressComplete } from '../../components/AddressForm'
 
 type ShippingOption = {
   id: number
@@ -28,8 +29,6 @@ export default function Cart() {
 
   const [paying, setPaying] = useState(false)
   const [address, setAddress] = useState<ShippingAddress>(emptyAddress)
-  const [cepLoading, setCepLoading] = useState(false)
-  const [cepError, setCepError] = useState('')
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
   const [selectedShippingId, setSelectedShippingId] = useState<number | null>(null)
   const [shippingLoading, setShippingLoading] = useState(false)
@@ -38,35 +37,10 @@ export default function Cart() {
   const selectedShipping = shippingOptions.find((o) => o.id === selectedShippingId) ?? null
   const grandTotal = total + (selectedShipping?.price ?? 0)
 
-  async function handleCepBlur() {
-    const digits = address.cep.replace(/\D/g, '')
-    if (digits.length !== 8) return
-
-    setCepError('')
-    setCepLoading(true)
+  function handleAddressChange(next: ShippingAddress) {
+    setAddress(next)
     setShippingOptions([])
     setSelectedShippingId(null)
-
-    try {
-      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
-      const data = await res.json()
-      if (data.erro) {
-        setCepError('CEP não encontrado.')
-        return
-      }
-      setAddress((a) => ({
-        ...a,
-        street: data.logradouro ?? '',
-        neighborhood: data.bairro ?? '',
-        city: data.localidade ?? '',
-        state: data.uf ?? '',
-      }))
-      await calculateShipping(digits)
-    } catch {
-      setCepError('Não foi possível buscar o CEP.')
-    } finally {
-      setCepLoading(false)
-    }
   }
 
   async function calculateShipping(cepDigits: string) {
@@ -94,19 +68,8 @@ export default function Cart() {
     }
   }
 
-  function addressComplete() {
-    return (
-      address.cep.replace(/\D/g, '').length === 8 &&
-      address.street &&
-      address.number &&
-      address.neighborhood &&
-      address.city &&
-      address.state
-    )
-  }
-
   async function handlePagar() {
-    if (!addressComplete() || !selectedShipping) return
+    if (!isAddressComplete(address) || !selectedShipping) return
     setPaying(true)
     try {
       // Chama a Edge Function que cria a preferência no Mercado Pago
@@ -187,107 +150,8 @@ export default function Cart() {
             </Link>
           </div>
         ) : (
-          <div className="store-form">
-            <div className="form-card">
-              <h3>Endereço de entrega</h3>
-              <div className="form-field">
-                <label className="form-field-label" htmlFor="cep">
-                  CEP
-                </label>
-                <input
-                  id="cep"
-                  type="text"
-                  placeholder="00000-000"
-                  value={address.cep}
-                  onChange={(e) => setAddress({ ...address, cep: e.target.value })}
-                  onBlur={handleCepBlur}
-                  maxLength={9}
-                  required
-                />
-                {cepLoading && <p className="checkout-hint">Buscando endereço…</p>}
-                {cepError && <p className="checkout-error">{cepError}</p>}
-              </div>
-
-              <div className="form-field">
-                <label className="form-field-label" htmlFor="street">
-                  Rua
-                </label>
-                <input
-                  id="street"
-                  type="text"
-                  value={address.street}
-                  onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-field">
-                  <label className="form-field-label" htmlFor="number">
-                    Número
-                  </label>
-                  <input
-                    id="number"
-                    type="text"
-                    value={address.number}
-                    onChange={(e) => setAddress({ ...address, number: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-field">
-                  <label className="form-field-label" htmlFor="complement">
-                    Complemento
-                  </label>
-                  <input
-                    id="complement"
-                    type="text"
-                    value={address.complement}
-                    onChange={(e) => setAddress({ ...address, complement: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="form-field">
-                <label className="form-field-label" htmlFor="neighborhood">
-                  Bairro
-                </label>
-                <input
-                  id="neighborhood"
-                  type="text"
-                  value={address.neighborhood}
-                  onChange={(e) => setAddress({ ...address, neighborhood: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-field">
-                  <label className="form-field-label" htmlFor="city">
-                    Cidade
-                  </label>
-                  <input
-                    id="city"
-                    type="text"
-                    value={address.city}
-                    onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-field">
-                  <label className="form-field-label" htmlFor="state">
-                    UF
-                  </label>
-                  <input
-                    id="state"
-                    type="text"
-                    value={address.state}
-                    maxLength={2}
-                    onChange={(e) => setAddress({ ...address, state: e.target.value.toUpperCase() })}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
+          <div>
+            <AddressForm address={address} onChange={handleAddressChange} onCepResolved={calculateShipping} />
 
             {shippingLoading && <p className="checkout-hint">Calculando frete…</p>}
             {shippingError && <p className="checkout-error">{shippingError}</p>}
@@ -341,7 +205,7 @@ export default function Cart() {
               <button
                 className="seal-button"
                 onClick={handlePagar}
-                disabled={paying || authLoading || !addressComplete() || !selectedShipping}
+                disabled={paying || authLoading || !isAddressComplete(address) || !selectedShipping}
               >
                 {paying ? 'Redirecionando…' : 'Pagar com Mercado Pago'}
               </button>

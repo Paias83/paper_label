@@ -64,11 +64,12 @@ export type Order = {
 export type OrderItem = {
   id: string
   order_id: string
-  product_id: string
+  product_id: string | null
+  custom_request_id: string | null
   quantity: number
   price_at_purchase: number
   quantity_from_stock: number
-  fulfillment_status: 'estoque_pronto' | 'empenhado' | 'aguardando_compra' | null
+  fulfillment_status: 'estoque_pronto' | 'empenhado' | 'aguardando_compra' | 'personalizado' | null
 }
 
 export type OrderItemReservation = {
@@ -131,6 +132,39 @@ export type ProductMaterial = {
   product_id: string
   material_id: string
   quantity: number
+  created_at: string
+}
+
+export type QuoteStatus =
+  | 'solicitado'
+  | 'em_analise'
+  | 'proposta_enviada'
+  | 'aprovado'
+  | 'recusado'
+  | 'cancelado'
+
+export type QuoteRequest = {
+  id: string
+  user_id: string
+  inspiration_product_id: string | null
+  title: string
+  description: string
+  status: QuoteStatus
+  final_price: number | null
+  shipping_cost: number | null
+  order_id: string | null
+  created_at: string
+}
+
+export type QuoteMessage = {
+  id: string
+  quote_request_id: string
+  sender_role: 'cliente' | 'admin'
+  sender_id: string
+  body: string | null
+  images: string[]
+  proposed_price: number | null
+  proposed_shipping_cost: number | null
   created_at: string
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, Wand2 } from 'lucide-react'
 import { supabase, type Category, type Product } from '../../lib/supabase'
 import FeaturedCarousel from '../../components/FeaturedCarousel'
 import CategoryNav from '../../components/CategoryNav'
@@ -98,6 +98,10 @@ export default function Home() {
   const activeCategory = categorySlug ? categories.find((c) => c.slug === categorySlug) : null
   const sectionTitle = activeCategory ? activeCategory.name : 'Em destaque'
 
+  function isCustomProduct(p: Product) {
+    return categories.find((c) => c.id === p.category_id)?.slug === 'personalizados'
+  }
+
   return (
     <div>
       <FeaturedCarousel products={carouselProducts} />
@@ -130,22 +134,36 @@ export default function Home() {
                   <h3>{p.name}</h3>
                   <div className="product-card-footer">
                     <span className="price">
-                      {p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {isCustomProduct(p)
+                        ? `A partir de ${p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+                        : p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
-                    <button
-                      type="button"
-                      className="add-to-cart-button"
-                      aria-label={`Adicionar ${p.name} ao carrinho`}
-                      title="Adicionar ao carrinho"
-                      disabled={p.stock <= 0}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        addItem(p)
-                      }}
-                    >
-                      <ShoppingBag size={16} strokeWidth={1.6} />
-                    </button>
+                    {isCustomProduct(p) ? (
+                      <Link
+                        to={`/personalizados/novo?produto=${p.id}`}
+                        className="add-to-cart-button"
+                        aria-label={`Solicitar orçamento inspirado em ${p.name}`}
+                        title="Solicitar orçamento"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Wand2 size={16} strokeWidth={1.6} />
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        className="add-to-cart-button"
+                        aria-label={`Adicionar ${p.name} ao carrinho`}
+                        title="Adicionar ao carrinho"
+                        disabled={p.stock <= 0}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          addItem(p)
+                        }}
+                      >
+                        <ShoppingBag size={16} strokeWidth={1.6} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </Link>
