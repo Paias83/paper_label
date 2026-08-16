@@ -18,7 +18,7 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 type IncomingItem = { id: string; title: string; quantity: number; unit_price: number }
-type IncomingShipping = { service_name: string; price: number }
+type IncomingShipping = { type: 'entrega' | 'retirada'; service_name: string; price: number }
 type IncomingAddress = {
   cep: string
   street: string
@@ -50,7 +50,7 @@ serve(async (req) => {
     const { items, shipping, address } = (await req.json()) as {
       items: IncomingItem[]
       shipping: IncomingShipping
-      address: IncomingAddress
+      address: IncomingAddress | null
     }
     if (!items?.length) {
       return new Response(JSON.stringify({ error: 'Carrinho vazio.' }), {
@@ -58,8 +58,16 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-    if (!shipping?.price || !address?.cep) {
-      return new Response(JSON.stringify({ error: 'Endereço e frete são obrigatórios.' }), {
+    // shipping.price pode ser 0 legitimamente (retirada no local), por isso
+    // a validação checa presença do objeto/tipo, não o valor do preço.
+    if (!shipping?.type || shipping.price == null) {
+      return new Response(JSON.stringify({ error: 'Frete é obrigatório.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    if (shipping.type === 'entrega' && !address?.cep) {
+      return new Response(JSON.stringify({ error: 'Endereço é obrigatório para entrega.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -92,8 +100,9 @@ serve(async (req) => {
         user_id: user.id,
         status: 'pendente',
         total,
-        shipping_cep: address.cep,
-        shipping_address: address,
+        shipping_type: shipping.type,
+        shipping_cep: shipping.type === 'entrega' ? address?.cep : null,
+        shipping_address: shipping.type === 'entrega' ? address : null,
         shipping_cost: shipping.price,
         shipping_service: shipping.service_name,
       })
@@ -120,13 +129,19 @@ serve(async (req) => {
           unit_price: i.unit_price,
           currency_id: 'BRL',
         })),
-        {
-          id: 'frete',
-          title: `Frete - ${shipping.service_name}`,
-          quantity: 1,
-          unit_price: shipping.price,
-          currency_id: 'BRL',
-        },
+        // Retirada no local tem preço 0 — o Mercado Pago não aceita item
+        // com unit_price zero, então omitimos a linha de frete nesse caso.
+        ...(shipping.price > 0
+          ? [
+              {
+                id: 'frete',
+                title: `Frete - ${shipping.service_name}`,
+                quantity: 1,
+                unit_price: shipping.price,
+                currency_id: 'BRL',
+              },
+            ]
+          : []),
       ],
       external_reference: order.id,
       notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,

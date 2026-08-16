@@ -50,14 +50,24 @@ export type ShippingAddress = {
 export type Order = {
   id: string
   user_id: string
-  status: 'pendente' | 'pago' | 'enviado' | 'entregue' | 'cancelado'
+  status:
+    | 'pendente'
+    | 'pago'
+    | 'enviado'
+    | 'entregue'
+    | 'pronto_para_retirada'
+    | 'retirado'
+    | 'cancelado'
   total: number
   mp_payment_id: string | null
+  shipping_type: 'entrega' | 'retirada'
   shipping_cep: string | null
   shipping_address: ShippingAddress | null
   shipping_cost: number
   shipping_service: string | null
   tracking_code: string | null
+  admin_seen_at: string | null
+  last_status_change_by: 'sistema' | 'admin' | null
   created_at: string
 }
 

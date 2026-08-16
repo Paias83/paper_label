@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 import { supabase, type ShippingAddress } from '../../lib/supabase'
 import AddressForm, { isAddressComplete } from '../../components/AddressForm'
+import DeliveryMethodPicker, { PICKUP_INFO, type DeliveryMethod } from '../../components/DeliveryMethodPicker'
 
 type ShippingOption = {
   id: number
@@ -23,24 +24,43 @@ const emptyAddress: ShippingAddress = {
   state: '',
 }
 
+const PICKUP_OPTION: ShippingOption = {
+  id: -1,
+  name: 'Retirada no local',
+  price: 0,
+  delivery_time: 0,
+  company: 'Studio Paper',
+}
+
 export default function Cart() {
   const { items, setQuantity, removeItem, total } = useCart()
   const { user, loading: authLoading } = useAuth()
 
   const [paying, setPaying] = useState(false)
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('entrega')
   const [address, setAddress] = useState<ShippingAddress>(emptyAddress)
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
   const [selectedShippingId, setSelectedShippingId] = useState<number | null>(null)
   const [shippingLoading, setShippingLoading] = useState(false)
   const [shippingError, setShippingError] = useState('')
 
-  const selectedShipping = shippingOptions.find((o) => o.id === selectedShippingId) ?? null
+  const selectedShipping =
+    deliveryMethod === 'retirada' ? PICKUP_OPTION : shippingOptions.find((o) => o.id === selectedShippingId) ?? null
   const grandTotal = total + (selectedShipping?.price ?? 0)
+  const canPay =
+    deliveryMethod === 'retirada' ? true : isAddressComplete(address) && Boolean(selectedShipping)
 
   function handleAddressChange(next: ShippingAddress) {
     setAddress(next)
     setShippingOptions([])
     setSelectedShippingId(null)
+  }
+
+  function handleDeliveryMethodChange(next: DeliveryMethod) {
+    setDeliveryMethod(next)
+    setShippingOptions([])
+    setSelectedShippingId(null)
+    setShippingError('')
   }
 
   async function calculateShipping(cepDigits: string) {
@@ -69,7 +89,7 @@ export default function Cart() {
   }
 
   async function handlePagar() {
-    if (!isAddressComplete(address) || !selectedShipping) return
+    if (!canPay || !selectedShipping) return
     setPaying(true)
     try {
       // Chama a Edge Function que cria a preferência no Mercado Pago
@@ -82,15 +102,15 @@ export default function Cart() {
             quantity: i.quantity,
             unit_price: i.product.price,
           })),
-          shipping: { service_name: selectedShipping.name, price: selectedShipping.price },
-          address,
+          shipping: { type: deliveryMethod, service_name: selectedShipping.name, price: selectedShipping.price },
+          address: deliveryMethod === 'entrega' ? address : null,
         },
       })
       if (error) throw error
 
       // Guarda o endereço no perfil pra pré-preencher da próxima compra —
       // best-effort, não bloqueia o checkout se falhar.
-      if (user) {
+      if (user && deliveryMethod === 'entrega') {
         supabase.from('profiles').update({ addresses: [address] }).eq('id', user.id)
       }
 
@@ -151,36 +171,47 @@ export default function Cart() {
           </div>
         ) : (
           <div>
-            <AddressForm address={address} onChange={handleAddressChange} onCepResolved={calculateShipping} />
+            <DeliveryMethodPicker value={deliveryMethod} onChange={handleDeliveryMethodChange} />
 
-            {shippingLoading && <p className="checkout-hint">Calculando frete…</p>}
-            {shippingError && <p className="checkout-error">{shippingError}</p>}
-
-            {shippingOptions.length > 0 && (
+            {deliveryMethod === 'retirada' ? (
               <div className="form-card" style={{ marginTop: 'var(--space-3)' }}>
-                <h3>Frete</h3>
-                <div className="shipping-options">
-                  {shippingOptions.map((opt) => (
-                    <label key={opt.id} className="shipping-option">
-                      <input
-                        type="radio"
-                        name="shipping"
-                        checked={selectedShippingId === opt.id}
-                        onChange={() => setSelectedShippingId(opt.id)}
-                      />
-                      <span className="shipping-option-info">
-                        <span>
-                          {opt.company} {opt.name}
-                          <span className="shipping-option-carrier"> — {opt.delivery_time} dias úteis</span>
-                        </span>
-                        <span className="shipping-option-price">
-                          {opt.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                <h3>Retirada no local</h3>
+                <p className="checkout-hint">Retire seu pedido em: {PICKUP_INFO}</p>
               </div>
+            ) : (
+              <>
+                <AddressForm address={address} onChange={handleAddressChange} onCepResolved={calculateShipping} />
+
+                {shippingLoading && <p className="checkout-hint">Calculando frete…</p>}
+                {shippingError && <p className="checkout-error">{shippingError}</p>}
+
+                {shippingOptions.length > 0 && (
+                  <div className="form-card" style={{ marginTop: 'var(--space-3)' }}>
+                    <h3>Frete</h3>
+                    <div className="shipping-options">
+                      {shippingOptions.map((opt) => (
+                        <label key={opt.id} className="shipping-option">
+                          <input
+                            type="radio"
+                            name="shipping"
+                            checked={selectedShippingId === opt.id}
+                            onChange={() => setSelectedShippingId(opt.id)}
+                          />
+                          <span className="shipping-option-info">
+                            <span>
+                              {opt.company} {opt.name}
+                              <span className="shipping-option-carrier"> — {opt.delivery_time} dias úteis</span>
+                            </span>
+                            <span className="shipping-option-price">
+                              {opt.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             <div className="checkout-summary">
@@ -205,7 +236,7 @@ export default function Cart() {
               <button
                 className="seal-button"
                 onClick={handlePagar}
-                disabled={paying || authLoading || !isAddressComplete(address) || !selectedShipping}
+                disabled={paying || authLoading || !canPay || !selectedShipping}
               >
                 {paying ? 'Redirecionando…' : 'Pagar com Mercado Pago'}
               </button>

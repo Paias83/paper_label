@@ -48,12 +48,16 @@ serve(async (req) => {
   }
 
   try {
-    const { quote_request_id, address } = (await req.json()) as {
+    const { quote_request_id, shipping_type, address } = (await req.json()) as {
       quote_request_id: string
-      address: IncomingAddress
+      shipping_type: 'entrega' | 'retirada'
+      address: IncomingAddress | null
     }
-    if (!quote_request_id || !address?.cep) {
-      return jsonResponse({ error: 'Orçamento e endereço são obrigatórios.' }, 400)
+    if (!quote_request_id) {
+      return jsonResponse({ error: 'Orçamento é obrigatório.' }, 400)
+    }
+    if (shipping_type === 'entrega' && !address?.cep) {
+      return jsonResponse({ error: 'Endereço é obrigatório para entrega.' }, 400)
     }
 
     const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -83,7 +87,9 @@ serve(async (req) => {
       return jsonResponse({ error: 'Esse orçamento ainda não tem uma proposta pra aprovar.' }, 400)
     }
 
-    const shippingCost = quote.shipping_cost ?? 0
+    // Retirada no local sempre é grátis, mesmo que um frete tenha sido
+    // negociado na conversa — o cliente decide o método na hora de aprovar.
+    const shippingCost = shipping_type === 'retirada' ? 0 : quote.shipping_cost ?? 0
     const total = quote.final_price + shippingCost
 
     const { data: order, error: orderError } = await admin
@@ -92,10 +98,11 @@ serve(async (req) => {
         user_id: user.id,
         status: 'pendente',
         total,
-        shipping_cep: address.cep,
-        shipping_address: address,
+        shipping_type,
+        shipping_cep: shipping_type === 'entrega' ? address?.cep : null,
+        shipping_address: shipping_type === 'entrega' ? address : null,
         shipping_cost: shippingCost,
-        shipping_service: 'Combinado no orçamento',
+        shipping_service: shipping_type === 'retirada' ? 'Retirada no local' : 'Combinado no orçamento',
       })
       .select()
       .single()
@@ -124,13 +131,19 @@ serve(async (req) => {
           unit_price: quote.final_price,
           currency_id: 'BRL',
         },
-        {
-          id: 'frete',
-          title: 'Frete - Combinado no orçamento',
-          quantity: 1,
-          unit_price: shippingCost,
-          currency_id: 'BRL',
-        },
+        // Mercado Pago não aceita item com unit_price zero — omite a linha
+        // de frete quando é retirada no local.
+        ...(shippingCost > 0
+          ? [
+              {
+                id: 'frete',
+                title: 'Frete - Combinado no orçamento',
+                quantity: 1,
+                unit_price: shippingCost,
+                currency_id: 'BRL',
+              },
+            ]
+          : []),
       ],
       external_reference: order.id,
       notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,

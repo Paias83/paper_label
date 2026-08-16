@@ -7,6 +7,7 @@ type Status = 'checking' | 'allowed' | 'denied' | 'anonymous'
 export default function AdminLayout() {
   const [status, setStatus] = useState<Status>('checking')
   const [pendingQuotes, setPendingQuotes] = useState(0)
+  const [pendingOrders, setPendingOrders] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -37,6 +38,14 @@ export default function AdminLayout() {
           .select('id', { count: 'exact', head: true })
           .in('status', ['solicitado', 'em_analise'])
         if (active) setPendingQuotes(count ?? 0)
+
+        // Pedidos novos ou com mudança de status feita pelo sistema, ainda
+        // não conferidos pelo admin (ver Orders.tsx / mp-webhook).
+        const { count: ordersCount } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .is('admin_seen_at', null)
+        if (active) setPendingOrders(ordersCount ?? 0)
       }
     }
 
@@ -94,7 +103,10 @@ export default function AdminLayout() {
           <NavLink to="/admin/fornecedores">Fornecedores</NavLink>
 
           <span className="admin-nav-label">Vendas</span>
-          <NavLink to="/admin/pedidos">Pedidos</NavLink>
+          <NavLink to="/admin/pedidos">
+            Pedidos
+            {pendingOrders > 0 && <span className="nav-badge">{pendingOrders}</span>}
+          </NavLink>
           <NavLink to="/admin/orcamentos">
             Orçamentos
             {pendingQuotes > 0 && <span className="nav-badge">{pendingQuotes}</span>}

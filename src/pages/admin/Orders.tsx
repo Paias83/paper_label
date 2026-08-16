@@ -1,7 +1,14 @@
 import { Fragment, useEffect, useState } from 'react'
 import { supabase, type Order, type OrderItem, type Product, type QuoteRequest } from '../../lib/supabase'
 
-const STATUS_OPTIONS: Order['status'][] = ['pendente', 'pago', 'enviado', 'entregue', 'cancelado']
+const STATUS_OPTIONS_ENTREGA: Order['status'][] = ['pendente', 'pago', 'enviado', 'entregue', 'cancelado']
+const STATUS_OPTIONS_RETIRADA: Order['status'][] = [
+  'pendente',
+  'pago',
+  'pronto_para_retirada',
+  'retirado',
+  'cancelado',
+]
 
 const FULFILLMENT_LABEL: Record<string, string> = {
   estoque_pronto: 'Estoque pronto',
@@ -37,8 +44,21 @@ export default function Orders() {
   }, [])
 
   async function updateStatus(id: string, status: Order['status']) {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)))
-    await supabase.from('orders').update({ status }).eq('id', id)
+    const admin_seen_at = new Date().toISOString()
+    setOrders((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, status, admin_seen_at, last_status_change_by: 'admin' } : o))
+    )
+    await supabase.from('orders').update({ status, admin_seen_at, last_status_change_by: 'admin' }).eq('id', id)
+  }
+
+  async function toggleExpanded(order: Order) {
+    const next = expanded === order.id ? null : order.id
+    setExpanded(next)
+    if (next && !order.admin_seen_at) {
+      const admin_seen_at = new Date().toISOString()
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, admin_seen_at } : o)))
+      await supabase.from('orders').update({ admin_seen_at }).eq('id', order.id)
+    }
   }
 
   function trackingDraft(order: Order) {
@@ -100,7 +120,7 @@ export default function Orders() {
                         type="button"
                         className="icon-button"
                         aria-label={isOpen ? 'Recolher itens' : 'Ver itens'}
-                        onClick={() => setExpanded(isOpen ? null : o.id)}
+                        onClick={() => toggleExpanded(o)}
                       >
                         {isOpen ? '−' : '+'}
                       </button>
@@ -113,11 +133,13 @@ export default function Orders() {
                     </td>
                     <td>
                       <select value={o.status} onChange={(e) => updateStatus(o.id, e.target.value as Order['status'])}>
-                        {STATUS_OPTIONS.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
+                        {(o.shipping_type === 'retirada' ? STATUS_OPTIONS_RETIRADA : STATUS_OPTIONS_ENTREGA).map(
+                          (s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          )
+                        )}
                       </select>
                     </td>
                     <td>{new Date(o.created_at).toLocaleDateString('pt-BR')}</td>
@@ -126,7 +148,19 @@ export default function Orders() {
                     <tr>
                       <td></td>
                       <td colSpan={4}>
-                        {o.shipping_address ? (
+                        {o.last_status_change_by && (
+                          <p style={{ color: 'var(--charcoal)', margin: '0 0 8px' }}>
+                            <strong>Última mudança de status:</strong>{' '}
+                            {o.last_status_change_by === 'sistema'
+                              ? 'automática (Mercado Pago)'
+                              : 'manual (admin)'}
+                          </p>
+                        )}
+                        {o.shipping_type === 'retirada' ? (
+                          <p style={{ margin: '8px 0' }}>
+                            <strong>Retirada no local</strong> — sem custo de frete.
+                          </p>
+                        ) : o.shipping_address ? (
                           <div style={{ margin: '8px 0' }}>
                             <strong>Entrega:</strong>{' '}
                             {o.shipping_address.street}, {o.shipping_address.number}
@@ -143,6 +177,7 @@ export default function Orders() {
                           </p>
                         )}
 
+                        {o.shipping_type !== 'retirada' && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0' }}>
                           <strong>Rastreio:</strong>
                           <input
@@ -163,6 +198,7 @@ export default function Orders() {
                             {savingTracking === o.id ? 'Salvando…' : 'Salvar'}
                           </button>
                         </div>
+                        )}
 
                         {orderItems.length === 0 ? (
                           <p style={{ color: 'var(--charcoal)', margin: '8px 0' }}>

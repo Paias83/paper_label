@@ -4,6 +4,7 @@ import { supabase, type QuoteMessage, type QuoteRequest, type ShippingAddress } 
 import { useAuth } from '../../context/AuthContext'
 import { QUOTE_STATUS_LABEL } from '../../lib/quoteStatus'
 import AddressForm, { isAddressComplete } from '../../components/AddressForm'
+import DeliveryMethodPicker, { PICKUP_INFO, type DeliveryMethod } from '../../components/DeliveryMethodPicker'
 
 const emptyAddress: ShippingAddress = {
   cep: '',
@@ -29,8 +30,12 @@ export default function QuoteThread() {
   const [sending, setSending] = useState(false)
 
   const [showAddressForm, setShowAddressForm] = useState(false)
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('entrega')
   const [address, setAddress] = useState<ShippingAddress>(emptyAddress)
   const [paying, setPaying] = useState(false)
+
+  const canApprove = deliveryMethod === 'retirada' || isAddressComplete(address)
+  const shippingCost = deliveryMethod === 'retirada' ? 0 : quote?.shipping_cost ?? 0
 
   async function load() {
     if (!id) return
@@ -97,11 +102,15 @@ export default function QuoteThread() {
   }
 
   async function handleAprovar() {
-    if (!quote || !isAddressComplete(address)) return
+    if (!quote || !canApprove) return
     setPaying(true)
     try {
       const { data, error } = await supabase.functions.invoke('create-quote-order', {
-        body: { quote_request_id: quote.id, address },
+        body: {
+          quote_request_id: quote.id,
+          shipping_type: deliveryMethod,
+          address: deliveryMethod === 'entrega' ? address : null,
+        },
       })
       if (error) throw error
       window.location.href = data.init_point
@@ -161,7 +170,7 @@ export default function QuoteThread() {
           <div className="checkout-summary-row total">
             <span>Total (com frete)</span>
             <strong className="price">
-              {(quote.final_price + (quote.shipping_cost ?? 0)).toLocaleString('pt-BR', {
+              {(quote.final_price + shippingCost).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
               })}
@@ -170,11 +179,21 @@ export default function QuoteThread() {
 
           {showAddressForm ? (
             <>
-              <AddressForm address={address} onChange={setAddress} title="Endereço de entrega" />
+              <DeliveryMethodPicker value={deliveryMethod} onChange={setDeliveryMethod} />
+
+              {deliveryMethod === 'retirada' ? (
+                <div className="form-card" style={{ marginTop: 'var(--space-3)' }}>
+                  <h3>Retirada no local</h3>
+                  <p className="checkout-hint">Retire seu pedido em: {PICKUP_INFO}</p>
+                </div>
+              ) : (
+                <AddressForm address={address} onChange={setAddress} title="Endereço de entrega" />
+              )}
+
               <button
                 className="seal-button"
                 onClick={handleAprovar}
-                disabled={paying || !isAddressComplete(address)}
+                disabled={paying || !canApprove}
                 style={{ width: '100%', marginTop: 12 }}
               >
                 {paying ? 'Redirecionando…' : 'Confirmar e pagar'}

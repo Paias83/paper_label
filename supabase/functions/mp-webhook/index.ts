@@ -47,9 +47,15 @@ serve(async (req) => {
 
     if (payment.status === 'approved') {
       // Só processa uma vez: se já estava "pago", não roda o fulfillment de novo.
+      // admin_seen_at volta a null pra sinalizar no painel que precisa de atenção.
       const { data: updated } = await admin
         .from('orders')
-        .update({ status: 'pago', mp_payment_id: String(paymentId) })
+        .update({
+          status: 'pago',
+          mp_payment_id: String(paymentId),
+          admin_seen_at: null,
+          last_status_change_by: 'sistema',
+        })
         .eq('id', orderId)
         .neq('status', 'pago')
         .select()
@@ -60,7 +66,11 @@ serve(async (req) => {
         if (fulfillError) console.error('fulfill_order falhou:', fulfillError)
       }
     } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
-      await admin.from('orders').update({ status: 'cancelado' }).eq('id', orderId).neq('status', 'pago')
+      await admin
+        .from('orders')
+        .update({ status: 'cancelado', admin_seen_at: null, last_status_change_by: 'sistema' })
+        .eq('id', orderId)
+        .neq('status', 'pago')
     }
 
     return new Response('ok', { status: 200 })
