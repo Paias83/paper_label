@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase, type Order, type OrderItem, type Product, type QuoteRequest } from '../../lib/supabase'
 
 const STATUS_OPTIONS_ENTREGA: Order['status'][] = ['pendente', 'pago', 'enviado', 'entregue', 'cancelado']
@@ -86,9 +87,14 @@ export default function Orders() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <p className="eyebrow">Vendas</p>
-        <h2>Pedidos</h2>
+      <div className="admin-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <p className="eyebrow">Vendas</p>
+          <h2>Pedidos</h2>
+        </div>
+        <Link to="/admin/pedidos/novo" className="seal-button">
+          + Novo pedido
+        </Link>
       </div>
 
       <div className="list-toolbar" style={{ justifyContent: 'flex-end' }}>
@@ -103,6 +109,7 @@ export default function Orders() {
             <tr>
               <th></th>
               <th>Pedido</th>
+              <th>Cliente</th>
               <th>Total</th>
               <th>Status</th>
               <th>Data</th>
@@ -128,6 +135,10 @@ export default function Orders() {
                     <td>
                       <span className="order-id">{o.id.slice(0, 8)}</span>
                     </td>
+                    <td>
+                      {o.customer_name || '—'}
+                      {o.source === 'manual' && <span className="type-badge manual"> Manual</span>}
+                    </td>
                     <td className="price">
                       {o.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </td>
@@ -147,7 +158,7 @@ export default function Orders() {
                   {isOpen && (
                     <tr>
                       <td></td>
-                      <td colSpan={4}>
+                      <td colSpan={5}>
                         {o.last_status_change_by && (
                           <p style={{ color: 'var(--charcoal)', margin: '0 0 8px' }}>
                             <strong>Última mudança de status:</strong>{' '}
@@ -244,7 +255,7 @@ export default function Orders() {
             })}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={5} className="empty-state">
+                <td colSpan={6} className="empty-state">
                   Nenhum pedido ainda.
                 </td>
               </tr>

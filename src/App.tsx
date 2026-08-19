@@ -16,6 +16,7 @@ import AdminLayout from './pages/admin/AdminLayout'
 import ProductList from './pages/admin/ProductList'
 import ProductForm from './pages/admin/ProductForm'
 import Orders from './pages/admin/Orders'
+import OrderForm from './pages/admin/OrderForm'
 import Quotes from './pages/admin/Quotes'
 import AdminQuoteThread from './pages/admin/QuoteThread'
 import SuppliersList from './pages/admin/suppliers/SuppliersList'
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="produtos/novo" element={<ProductForm />} />
               <Route path="produtos/:id" element={<ProductForm />} />
               <Route path="pedidos" element={<Orders />} />
+              <Route path="pedidos/novo" element={<OrderForm />} />
               <Route path="orcamentos" element={<Quotes />} />
               <Route path="orcamentos/:id" element={<AdminQuoteThread />} />
               <Route path="fornecedores" element={<SuppliersList />} />

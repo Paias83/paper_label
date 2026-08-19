@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { supabase, type QuoteMessage, type QuoteRequest, type QuoteStatus } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { QUOTE_STATUS_LABEL } from '../../lib/quoteStatus'
+import CurrencyInput from '../../components/CurrencyInput'
 
 const STATUS_OPTIONS: QuoteStatus[] = [
   'solicitado',
@@ -23,8 +24,8 @@ export default function QuoteThread() {
 
   const [replyBody, setReplyBody] = useState('')
   const [replyImages, setReplyImages] = useState<string[]>([])
-  const [proposedPrice, setProposedPrice] = useState('')
-  const [proposedShipping, setProposedShipping] = useState('')
+  const [proposedPrice, setProposedPrice] = useState<number | null>(null)
+  const [proposedShipping, setProposedShipping] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
   const [sending, setSending] = useState(false)
 
@@ -70,8 +71,8 @@ export default function QuoteThread() {
     if (!replyBody.trim() && replyImages.length === 0) return
     setSending(true)
 
-    const price = proposedPrice ? Number(proposedPrice) : null
-    const shipping = proposedShipping ? Number(proposedShipping) : null
+    const price = proposedPrice
+    const shipping = proposedShipping
 
     await supabase.from('quote_messages').insert({
       quote_request_id: quote.id,
@@ -92,8 +93,8 @@ export default function QuoteThread() {
 
     setReplyBody('')
     setReplyImages([])
-    setProposedPrice('')
-    setProposedShipping('')
+    setProposedPrice(null)
+    setProposedShipping(null)
     setSending(false)
     load()
   }
@@ -194,14 +195,7 @@ export default function QuoteThread() {
             </label>
             <div className="price-field">
               <span className="prefix">R$</span>
-              <input
-                id="proposed-price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={proposedPrice}
-                onChange={(e) => setProposedPrice(e.target.value)}
-              />
+              <CurrencyInput id="proposed-price" value={proposedPrice} onChange={setProposedPrice} />
             </div>
           </div>
           <div className="form-field">
@@ -210,14 +204,7 @@ export default function QuoteThread() {
             </label>
             <div className="price-field">
               <span className="prefix">R$</span>
-              <input
-                id="proposed-shipping"
-                type="number"
-                step="0.01"
-                min="0"
-                value={proposedShipping}
-                onChange={(e) => setProposedShipping(e.target.value)}
-              />
+              <CurrencyInput id="proposed-shipping" value={proposedShipping} onChange={setProposedShipping} />
             </div>
           </div>
         </div>

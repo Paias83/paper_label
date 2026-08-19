@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase, type RawMaterial, type Supplier } from '../../../lib/supabase'
+import CurrencyInput from '../../../components/CurrencyInput'
 
 type Props = {
   material?: RawMaterial | null
@@ -20,7 +21,7 @@ export default function StockMovementModal({
 }: Props) {
   const [materialId, setMaterialId] = useState(fixedMaterial?.id ?? '')
   const [quantity, setQuantity] = useState('')
-  const [unitCost, setUnitCost] = useState(fixedMaterial?.cost_price ? String(fixedMaterial.cost_price) : '')
+  const [unitCost, setUnitCost] = useState<number | null>(fixedMaterial?.cost_price ?? null)
   const [supplierId, setSupplierId] = useState(fixedMaterial?.supplier_id ?? '')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
@@ -31,7 +32,7 @@ export default function StockMovementModal({
   function handleMaterialChange(id: string) {
     setMaterialId(id)
     const m = materials.find((mat) => mat.id === id)
-    setUnitCost(m?.cost_price ? String(m.cost_price) : '')
+    setUnitCost(m?.cost_price ?? null)
     setSupplierId(m?.supplier_id ?? '')
   }
 
@@ -51,7 +52,7 @@ export default function StockMovementModal({
       material_id: material.id,
       type,
       quantity: qty,
-      unit_cost: isEntrada && unitCost ? Number(unitCost) : null,
+      unit_cost: isEntrada && unitCost != null ? unitCost : null,
       supplier_id: isEntrada && supplierId ? supplierId : null,
       note: note || null,
     })
@@ -116,14 +117,7 @@ export default function StockMovementModal({
                 <label className="form-field-label" htmlFor="unit_cost">
                   Custo unitário (R$)
                 </label>
-                <input
-                  id="unit_cost"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={unitCost}
-                  onChange={(e) => setUnitCost(e.target.value)}
-                />
+                <CurrencyInput id="unit_cost" value={unitCost} onChange={setUnitCost} />
               </div>
               <div className="form-field">
                 <label className="form-field-label" htmlFor="supplier">

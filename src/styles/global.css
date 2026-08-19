@@ -1034,6 +1034,10 @@ a { color: inherit; }
   max-width: 900px;
 }
 
+.admin-main:has(.list-card) {
+  max-width: 1200px;
+}
+
 .admin-page-header {
   margin-bottom: var(--space-4);
 }
@@ -1526,7 +1530,8 @@ a { color: inherit; }
   background: var(--paper-raised);
   border: 1px solid var(--hairline);
   border-radius: 16px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   box-shadow: 0 6px 16px rgba(28, 27, 25, 0.06);
 }
 
@@ -1559,7 +1564,8 @@ a { color: inherit; }
   background: var(--paper);
 }
 
-.admin-table input[type='number'] {
+.admin-table input[type='number'],
+.admin-table input[type='text'] {
   width: 90px;
   height: 38px;
   padding: 6px 10px;
@@ -1655,6 +1661,7 @@ a { color: inherit; }
 .movement-actions {
   display: flex;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .movement-actions button {
@@ -1666,6 +1673,7 @@ a { color: inherit; }
   font-size: 0.8rem;
   font-family: var(--font-body);
   cursor: pointer;
+  white-space: nowrap;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 
@@ -1718,6 +1726,12 @@ a { color: inherit; }
 .type-badge.aguardando_compra {
   color: var(--danger);
   background: rgba(161, 58, 47, 0.1);
+}
+
+.type-badge.manual {
+  color: var(--brass);
+  background: rgba(176, 141, 87, 0.15);
+  margin-left: 6px;
 }
 
 /* Modal */

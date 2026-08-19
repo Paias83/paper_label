@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, type Supplier } from '../../../lib/supabase'
+import CurrencyInput from '../../../components/CurrencyInput'
 
-const UNITS = ['un', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'cx', 'pct', 'kWh']
+const UNITS = ['un', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'cx', 'pct', 'kWh', 'hora']
 
 const emptyForm = {
   name: '',
@@ -179,17 +180,14 @@ export default function MaterialForm() {
         <div className="form-row">
           <div className="form-field">
             <label className="form-field-label" htmlFor="cost_price">
-              {form.unit === 'kWh' ? 'Custo por hora' : 'Custo unitário'}
+              {form.unit === 'kWh' || form.unit === 'hora' ? 'Custo por hora' : 'Custo unitário'}
             </label>
             <div className="price-field">
               <span className="prefix">R$</span>
-              <input
+              <CurrencyInput
                 id="cost_price"
-                type="number"
-                step="0.01"
-                min="0"
                 value={form.cost_price}
-                onChange={(e) => setForm({ ...form, cost_price: Number(e.target.value) })}
+                onChange={(v) => setForm({ ...form, cost_price: v ?? 0 })}
               />
             </div>
           </div>

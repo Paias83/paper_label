@@ -49,7 +49,9 @@ export type ShippingAddress = {
 
 export type Order = {
   id: string
-  user_id: string
+  user_id: string | null
+  customer_name: string | null
+  source: 'loja' | 'manual'
   status:
     | 'pendente'
     | 'pago'

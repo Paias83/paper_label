@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, type Product } from '../../lib/supabase'
 import ProductionModal from './ProductionModal'
+import CurrencyInput from '../../components/CurrencyInput'
 
 export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([])
@@ -86,12 +87,7 @@ export default function ProductList() {
                   </div>
                 </td>
                 <td>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={p.price}
-                    onChange={(e) => updateField(p.id, 'price', Number(e.target.value))}
-                  />
+                  <CurrencyInput value={p.price} onChange={(v) => updateField(p.id, 'price', v ?? 0)} />
                 </td>
                 <td>
                   <span className={`stock-qty${p.stock <= 0 ? ' stock-low' : ''}`}>{p.stock}</span>

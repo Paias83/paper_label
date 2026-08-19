@@ -75,6 +75,7 @@ export default function MaterialsList() {
           <thead>
             <tr>
               <th>Matéria-prima</th>
+              <th>Cor</th>
               <th>Estoque</th>
               <th>Custo unit.</th>
               <th>Fornecedor</th>
@@ -89,6 +90,7 @@ export default function MaterialsList() {
                   <td>
                     <span className="product-name">{m.name}</span>
                   </td>
+                  <td>{m.color || '—'}</td>
                   <td>
                     <span className={`stock-qty${low ? ' stock-low' : ''}`}>
                       {m.stock} {m.unit}
@@ -125,7 +127,7 @@ export default function MaterialsList() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="empty-state">
+                <td colSpan={6} className="empty-state">
                   Nenhuma matéria-prima cadastrada.
                 </td>
               </tr>

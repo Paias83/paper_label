@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, type Category, type RawMaterial } from '../../lib/supabase'
+import CurrencyInput from '../../components/CurrencyInput'
 
 const emptyForm = {
   name: '',
@@ -293,13 +294,10 @@ export default function ProductForm() {
                 </label>
                 <div className="price-field">
                   <span className="prefix">R$</span>
-                  <input
+                  <CurrencyInput
                     id="price"
-                    type="number"
-                    step="0.01"
-                    min="0"
                     value={form.price}
-                    onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                    onChange={(v) => setForm({ ...form, price: v ?? 0 })}
                     required
                   />
                 </div>
@@ -402,12 +400,12 @@ export default function ProductForm() {
                       <option value="">Selecione…</option>
                       {materials.map((m) => (
                         <option key={m.id} value={m.id}>
-                          {m.name}
+                          {m.color ? `${m.name} — ${m.color}` : m.name}
                         </option>
                       ))}
                     </select>
                   </div>
-                  {material?.unit === 'kWh' ? (
+                  {material?.unit === 'kWh' || material?.unit === 'hora' ? (
                     <>
                       <div className="form-field recipe-field-narrow">
                         <label className="form-field-label">Horas</label>
