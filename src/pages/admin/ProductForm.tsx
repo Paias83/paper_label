@@ -249,7 +249,7 @@ export default function ProductForm() {
                   <option value="">Sem categoria</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {c.active ? c.name : `${c.name} (interna)`}
                     </option>
                   ))}
                 </select>

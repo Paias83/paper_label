@@ -96,6 +96,7 @@ export default function AdminLayout() {
             Produtos
           </NavLink>
           <NavLink to="/admin/produtos/novo">+ Novo produto</NavLink>
+          <NavLink to="/admin/categorias">Categorias</NavLink>
 
           <span className="admin-nav-label">Estoque</span>
           <NavLink to="/admin/estoque">Matérias-primas</NavLink>

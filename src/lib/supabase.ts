@@ -35,6 +35,7 @@ export type Category = {
   id: string
   name: string
   slug: string
+  active: boolean
 }
 
 export type ShippingAddress = {

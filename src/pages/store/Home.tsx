@@ -18,7 +18,11 @@ export default function Home() {
 
   useEffect(() => {
     async function loadCategories() {
-      const { data, error } = await supabase.from('categories').select('*').order('name')
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('active', true)
+        .order('name')
       if (error) console.error(error)
       setCategories(data ?? [])
     }

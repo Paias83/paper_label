@@ -26,6 +26,8 @@ export default function Orders() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [trackingDrafts, setTrackingDrafts] = useState<Record<string, string>>({})
   const [savingTracking, setSavingTracking] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [showCancelled, setShowCancelled] = useState(false)
 
   async function load() {
     const [ordersRes, itemsRes, productsRes, quotesRes] = await Promise.all([
@@ -85,6 +87,13 @@ export default function Orders() {
   }
   const itemsForOrder = (orderId: string) => items.filter((i) => i.order_id === orderId)
 
+  const filteredOrders = orders.filter((o) => {
+    if (!showCancelled && o.status === 'cancelado') return false
+    const term = search.trim().toLowerCase()
+    if (!term) return true
+    return o.id.toLowerCase().includes(term) || (o.customer_name ?? '').toLowerCase().includes(term)
+  })
+
   return (
     <div>
       <div className="admin-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -97,10 +106,26 @@ export default function Orders() {
         </Link>
       </div>
 
-      <div className="list-toolbar" style={{ justifyContent: 'flex-end' }}>
-        <span className="list-count">
-          {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
-        </span>
+      <div className="list-toolbar">
+        <input
+          type="search"
+          placeholder="Buscar por cliente ou nº do pedido…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={showCancelled}
+              onChange={(e) => setShowCancelled(e.target.checked)}
+            />
+            Mostrar cancelados
+          </label>
+          <span className="list-count">
+            {filteredOrders.length} {filteredOrders.length === 1 ? 'pedido' : 'pedidos'}
+          </span>
+        </div>
       </div>
 
       <div className="list-card">
@@ -113,10 +138,11 @@ export default function Orders() {
               <th>Total</th>
               <th>Status</th>
               <th>Data</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => {
+            {filteredOrders.map((o) => {
               const orderItems = itemsForOrder(o.id)
               const isOpen = expanded === o.id
               return (
@@ -154,11 +180,18 @@ export default function Orders() {
                       </select>
                     </td>
                     <td>{new Date(o.created_at).toLocaleDateString('pt-BR')}</td>
+                    <td>
+                      {o.source === 'manual' && o.status === 'pendente' && (
+                        <Link to={`/admin/pedidos/${o.id}/editar`} className="table-action-link">
+                          Editar
+                        </Link>
+                      )}
+                    </td>
                   </tr>
                   {isOpen && (
                     <tr>
                       <td></td>
-                      <td colSpan={5}>
+                      <td colSpan={6}>
                         {o.last_status_change_by && (
                           <p style={{ color: 'var(--charcoal)', margin: '0 0 8px' }}>
                             <strong>Última mudança de status:</strong>{' '}
@@ -253,10 +286,10 @@ export default function Orders() {
                 </Fragment>
               )
             })}
-            {orders.length === 0 && (
+            {filteredOrders.length === 0 && (
               <tr>
-                <td colSpan={6} className="empty-state">
-                  Nenhum pedido ainda.
+                <td colSpan={7} className="empty-state">
+                  {orders.length === 0 ? 'Nenhum pedido ainda.' : 'Nenhum pedido encontrado.'}
                 </td>
               </tr>
             )}

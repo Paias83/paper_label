@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, type Product, type ShippingAddress } from '../../lib/supabase'
 import CurrencyInput from '../../components/CurrencyInput'
 import AddressForm from '../../components/AddressForm'
@@ -18,6 +18,8 @@ const emptyAddress: ShippingAddress = {
 
 export default function OrderForm() {
   const navigate = useNavigate()
+  const { id } = useParams()
+  const isEditing = Boolean(id)
   const [products, setProducts] = useState<Product[]>([])
   const [customerName, setCustomerName] = useState('')
   const [items, setItems] = useState<ItemRow[]>([{ product_id: '', quantity: 1, price_at_purchase: 0 }])
@@ -28,6 +30,8 @@ export default function OrderForm() {
   const [status, setStatus] = useState<'pago' | 'pendente'>('pago')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(isEditing)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     supabase
@@ -36,6 +40,46 @@ export default function OrderForm() {
       .order('name')
       .then(({ data }) => setProducts(data ?? []))
   }, [])
+
+  useEffect(() => {
+    if (!id) return
+    async function loadOrder() {
+      const [{ data: order, error: orderError }, { data: orderItems, error: itemsError }] = await Promise.all([
+        supabase.from('orders').select('*').eq('id', id).single(),
+        supabase.from('order_items').select('*').eq('order_id', id),
+      ])
+      if (orderError || !order) {
+        setLoadError('Pedido não encontrado.')
+        setLoading(false)
+        return
+      }
+      if (order.source !== 'manual' || order.status !== 'pendente') {
+        setLoadError('Só é possível editar pedidos manuais que ainda estão pendentes de pagamento.')
+        setLoading(false)
+        return
+      }
+      if (itemsError) {
+        setLoadError('Não foi possível carregar os itens do pedido.')
+        setLoading(false)
+        return
+      }
+      setCustomerName(order.customer_name ?? '')
+      setShippingType(order.shipping_type === 'entrega' ? 'entrega' : 'retirada')
+      setAddress(order.shipping_address ?? emptyAddress)
+      setShippingService(order.shipping_type === 'entrega' ? order.shipping_service ?? '' : '')
+      setShippingCost(order.shipping_cost ?? 0)
+      setStatus('pendente')
+      setItems(
+        (orderItems ?? []).map((it) => ({
+          product_id: it.product_id ?? '',
+          quantity: it.quantity,
+          price_at_purchase: it.price_at_purchase,
+        }))
+      )
+      setLoading(false)
+    }
+    loadOrder()
+  }, [id])
 
   function addItem() {
     setItems((rows) => [...rows, { product_id: '', quantity: 1, price_at_purchase: 0 }])
@@ -72,24 +116,51 @@ export default function OrderForm() {
     }
 
     setSaving(true)
-    const { data, error: fnError } = await supabase.functions.invoke('create-manual-order', {
-      body: {
-        customer_name: customerName.trim() || null,
-        items: validItems,
-        shipping_type: shippingType,
-        address: shippingType === 'entrega' ? address : null,
-        shipping_cost: shippingType === 'entrega' ? shippingCost : 0,
-        shipping_service: shippingType === 'entrega' ? shippingService.trim() || null : null,
-        status,
-      },
-    })
+    const { data, error: fnError } = await supabase.functions.invoke(
+      isEditing ? 'update-manual-order' : 'create-manual-order',
+      {
+        body: {
+          ...(isEditing ? { order_id: id } : {}),
+          customer_name: customerName.trim() || null,
+          items: validItems,
+          shipping_type: shippingType,
+          address: shippingType === 'entrega' ? address : null,
+          shipping_cost: shippingType === 'entrega' ? shippingCost : 0,
+          shipping_service: shippingType === 'entrega' ? shippingService.trim() || null : null,
+          status,
+        },
+      }
+    )
     setSaving(false)
 
     if (fnError || data?.error) {
-      setError(data?.error ?? 'Não foi possível criar o pedido.')
+      setError(data?.error ?? `Não foi possível ${isEditing ? 'salvar' : 'criar'} o pedido.`)
       return
     }
     navigate('/admin/pedidos')
+  }
+
+  if (loading) {
+    return (
+      <div className="admin-page-header">
+        <Link to="/admin/pedidos" className="admin-back-link">
+          ← Pedidos
+        </Link>
+        <h2>Carregando pedido…</h2>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="admin-page-header">
+        <Link to="/admin/pedidos" className="admin-back-link">
+          ← Pedidos
+        </Link>
+        <h2>Não foi possível editar este pedido</h2>
+        <p>{loadError}</p>
+      </div>
+    )
   }
 
   return (
@@ -98,7 +169,7 @@ export default function OrderForm() {
         <Link to="/admin/pedidos" className="admin-back-link">
           ← Pedidos
         </Link>
-        <h2>Novo pedido manual</h2>
+        <h2>{isEditing ? 'Editar pedido manual' : 'Novo pedido manual'}</h2>
       </div>
 
       <div className="form-card">
@@ -247,7 +318,7 @@ export default function OrderForm() {
           Cancelar
         </Link>
         <button className="seal-button" type="submit" disabled={saving}>
-          {saving ? 'Salvando…' : 'Criar pedido'}
+          {saving ? 'Salvando…' : isEditing ? 'Salvar alterações' : 'Criar pedido'}
         </button>
       </div>
     </form>

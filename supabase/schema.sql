@@ -6,7 +6,8 @@
 create table categories (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  slug text not null unique
+  slug text not null unique,
+  active boolean not null default true -- false = somente interna (não aparece na loja)
 );
 
 create table products (
