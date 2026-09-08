@@ -163,7 +163,18 @@ export default function Orders() {
                       </button>
                     </td>
                     <td>
-                      <span className="order-id">{o.id.slice(0, 8)}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span className="order-id">{o.id.slice(0, 8)}</span>
+                        <a
+                          href={`/admin/pedidos/${o.id}/pdf`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="table-action-link"
+                          title="Gerar folha do pedido em PDF (A4)"
+                        >
+                          PDF
+                        </a>
+                      </span>
                     </td>
                     <td>
                       {o.customer_name || '—'}

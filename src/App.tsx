@@ -18,6 +18,7 @@ import ProductForm from './pages/admin/ProductForm'
 import CategoriesList from './pages/admin/CategoriesList'
 import Orders from './pages/admin/Orders'
 import OrderForm from './pages/admin/OrderForm'
+import OrderPrint from './pages/admin/OrderPrint'
 import Quotes from './pages/admin/Quotes'
 import AdminQuoteThread from './pages/admin/QuoteThread'
 import SuppliersList from './pages/admin/suppliers/SuppliersList'
@@ -44,6 +45,9 @@ export default function App() {
               <Route path="/meus-orcamentos" element={<MyQuotes />} />
               <Route path="/meus-orcamentos/:id" element={<QuoteThread />} />
             </Route>
+
+            {/* Folha de pedido em A4 (fora do AdminLayout, mas com checagem de admin própria) */}
+            <Route path="/admin/pedidos/:id/pdf" element={<OrderPrint />} />
 
             {/* Painel administrativo — acesso restrito a role=admin (checagem em AdminLayout) */}
             <Route path="/admin" element={<AdminLayout />}>
