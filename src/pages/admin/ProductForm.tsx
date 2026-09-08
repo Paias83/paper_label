@@ -356,7 +356,7 @@ export default function ProductForm() {
                 </div>
               )}
             </div>
-            <div className="form-row">
+            <div className="form-row" style={{ alignItems: 'start' }}>
               <div className="form-field">
                 <label className="form-field-label" htmlFor="price">
                   Preço
@@ -380,51 +380,6 @@ export default function ProductForm() {
                     />
                   )}
                 </div>
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: '0.85rem',
-                    color: 'var(--charcoal)',
-                    marginTop: 8,
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={autoPricing}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        margin_percent: e.target.checked ? f.margin_percent ?? 100 : null,
-                      }))
-                    }
-                  />
-                  Calcular pelo custo + margem
-                </label>
-                {autoPricing && (
-                  <>
-                    <div className="price-field" style={{ marginTop: 8 }}>
-                      <span className="prefix">%</span>
-                      <input
-                        type="number"
-                        step="1"
-                        min="0"
-                        aria-label="Margem sobre o custo"
-                        value={form.margin_percent ?? 0}
-                        onChange={(e) =>
-                          setForm({ ...form, margin_percent: Number(e.target.value) })
-                        }
-                      />
-                    </div>
-                    <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: 'var(--charcoal)' }}>
-                      Custo {totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} + {form.margin_percent ?? 0}% ={' '}
-                      <strong>
-                        {autoPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </strong>
-                    </p>
-                  </>
-                )}
               </div>
               <div className="form-field">
                 <label className="form-field-label" htmlFor="stock">
@@ -439,6 +394,41 @@ export default function ProductForm() {
                   required
                 />
               </div>
+            </div>
+
+            <div className="form-field" style={{ marginTop: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', color: 'var(--charcoal)' }}>
+                <input
+                  type="checkbox"
+                  checked={autoPricing}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      margin_percent: e.target.checked ? f.margin_percent ?? 100 : null,
+                    }))
+                  }
+                />
+                Calcular o preço pelo custo + margem
+              </label>
+              {autoPricing && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+                  <div className="price-field" style={{ maxWidth: 140 }}>
+                    <span className="prefix">%</span>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      aria-label="Margem sobre o custo"
+                      value={form.margin_percent ?? 0}
+                      onChange={(e) => setForm({ ...form, margin_percent: Number(e.target.value) })}
+                    />
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--charcoal)' }}>
+                    Custo {totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} + {form.margin_percent ?? 0}% ={' '}
+                    <strong>{autoPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                  </span>
+                </div>
+              )}
             </div>
             <p style={{ marginTop: 8, marginBottom: -8, color: 'var(--charcoal)', fontSize: '0.85rem' }}>
               Peso e dimensões da embalagem — usados para calcular o frete real na loja.
