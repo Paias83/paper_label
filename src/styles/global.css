@@ -1627,6 +1627,34 @@ a { color: inherit; }
   text-decoration: underline;
 }
 
+.pdf-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid rgba(107, 31, 42, 0.35);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wine);
+  background: rgba(107, 31, 42, 0.06);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.pdf-pill svg {
+  flex-shrink: 0;
+}
+
+.pdf-pill:hover {
+  background: var(--wine);
+  border-color: var(--wine);
+  color: #fff;
+}
+
 .empty-state {
   text-align: center;
   color: var(--charcoal);

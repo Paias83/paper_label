@@ -102,7 +102,18 @@ export default function OrderPrint() {
         <Link to="/admin/pedidos" className="ghost-button">
           ← Pedidos
         </Link>
-        <button type="button" className="seal-button" onClick={() => window.print()}>
+        <button
+          type="button"
+          className="seal-button"
+          onClick={() => window.print()}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M19 8H5a3 3 0 0 0-3 3v6h4v4h12v-4h4v-6a3 3 0 0 0-3-3Zm-3 11H8v-5h8v5Zm3-7a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm-1-7H6V3h12v2Z"
+            />
+          </svg>
           Imprimir / Salvar PDF
         </button>
       </div>
