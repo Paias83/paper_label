@@ -91,7 +91,11 @@ export default function Orders() {
     if (!showCancelled && o.status === 'cancelado') return false
     const term = search.trim().toLowerCase()
     if (!term) return true
-    return o.id.toLowerCase().includes(term) || (o.customer_name ?? '').toLowerCase().includes(term)
+    return (
+      o.id.toLowerCase().includes(term) ||
+      (o.customer_name ?? '').toLowerCase().includes(term) ||
+      (o.notes ?? '').toLowerCase().includes(term)
+    )
   })
 
   return (
@@ -109,7 +113,7 @@ export default function Orders() {
       <div className="list-toolbar">
         <input
           type="search"
-          placeholder="Buscar por cliente ou nº do pedido…"
+          placeholder="Buscar por cliente, observação ou nº do pedido…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -192,6 +196,11 @@ export default function Orders() {
                     <tr>
                       <td></td>
                       <td colSpan={6}>
+                        {o.notes && (
+                          <p style={{ margin: '0 0 8px', whiteSpace: 'pre-wrap' }}>
+                            <strong>Observação:</strong> {o.notes}
+                          </p>
+                        )}
                         {o.last_status_change_by && (
                           <p style={{ color: 'var(--charcoal)', margin: '0 0 8px' }}>
                             <strong>Última mudança de status:</strong>{' '}

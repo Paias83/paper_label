@@ -23,6 +23,7 @@ export default function OrderForm() {
   const isEditing = Boolean(id)
   const [products, setProducts] = useState<Product[]>([])
   const [customerName, setCustomerName] = useState('')
+  const [notes, setNotes] = useState('')
   const [items, setItems] = useState<ItemRow[]>([{ product_id: '', quantity: 1, price_at_purchase: 0 }])
   const [shippingType, setShippingType] = useState<'entrega' | 'retirada'>('retirada')
   const [address, setAddress] = useState<ShippingAddress>(emptyAddress)
@@ -65,6 +66,7 @@ export default function OrderForm() {
         return
       }
       setCustomerName(order.customer_name ?? '')
+      setNotes(order.notes ?? '')
       setShippingType(order.shipping_type === 'entrega' ? 'entrega' : 'retirada')
       setAddress(order.shipping_address ?? emptyAddress)
       setShippingService(order.shipping_type === 'entrega' ? order.shipping_service ?? '' : '')
@@ -123,6 +125,7 @@ export default function OrderForm() {
         body: {
           ...(isEditing ? { order_id: id } : {}),
           customer_name: customerName.trim() || null,
+          notes: notes.trim() || null,
           items: validItems,
           shipping_type: shippingType,
           address: shippingType === 'entrega' ? address : null,
@@ -184,6 +187,18 @@ export default function OrderForm() {
             placeholder="Nome ou referência do cliente"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
+          />
+        </div>
+        <div className="form-field">
+          <label className="form-field-label" htmlFor="notes">
+            Observação
+          </label>
+          <textarea
+            id="notes"
+            rows={3}
+            placeholder="O que é este pedido — útil quando o mesmo cliente tem vários pedidos"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
           />
         </div>
       </div>

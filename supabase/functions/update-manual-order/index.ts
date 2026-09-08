@@ -47,10 +47,11 @@ serve(async (req) => {
   }
 
   try {
-    const { order_id, customer_name, items, shipping_type, address, shipping_cost, shipping_service, status } =
+    const { order_id, customer_name, notes, items, shipping_type, address, shipping_cost, shipping_service, status } =
       (await req.json()) as {
         order_id: string
         customer_name: string | null
+        notes: string | null
         items: IncomingItem[]
         shipping_type: 'entrega' | 'retirada'
         address: IncomingAddress | null
@@ -125,6 +126,7 @@ serve(async (req) => {
       .from('orders')
       .update({
         customer_name: customer_name || null,
+        notes: notes || null,
         status,
         total,
         shipping_type,

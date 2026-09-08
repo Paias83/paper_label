@@ -48,9 +48,10 @@ serve(async (req) => {
   }
 
   try {
-    const { customer_name, items, shipping_type, address, shipping_cost, shipping_service, status } =
+    const { customer_name, notes, items, shipping_type, address, shipping_cost, shipping_service, status } =
       (await req.json()) as {
         customer_name: string | null
+        notes: string | null
         items: IncomingItem[]
         shipping_type: 'entrega' | 'retirada'
         address: IncomingAddress | null
@@ -94,6 +95,7 @@ serve(async (req) => {
       .insert({
         user_id: null,
         customer_name: customer_name || null,
+        notes: notes || null,
         source: 'manual',
         status,
         total,
