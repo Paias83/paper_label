@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { supabase, type Category, type RawMaterial } from '../../lib/supabase'
+import { supabase, type Category, type RawMaterial, type Supplier } from '../../lib/supabase'
 import CurrencyInput from '../../components/CurrencyInput'
+import { advanceOnEnter } from '../../lib/formNav'
+import MaterialQuickForm from './stock/MaterialQuickForm'
 
 const emptyForm = {
   name: '',
   description: '',
   price: 0,
+  margin_percent: null as number | null,
   stock: 0,
   category_id: '',
   images: [] as string[],
@@ -33,7 +36,9 @@ export default function ProductForm() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [savingCategory, setSavingCategory] = useState(false)
   const [materials, setMaterials] = useState<RawMaterial[]>([])
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [recipe, setRecipe] = useState<RecipeRow[]>([])
+  const [quickMaterial, setQuickMaterial] = useState(false)
 
   useEffect(() => {
     supabase
@@ -48,6 +53,12 @@ export default function ProductForm() {
       .eq('active', true)
       .order('name')
       .then(({ data }) => setMaterials(data ?? []))
+
+    supabase
+      .from('suppliers')
+      .select('*')
+      .order('name')
+      .then(({ data }) => setSuppliers(data ?? []))
   }, [])
 
   useEffect(() => {
@@ -161,19 +172,73 @@ export default function ProductForm() {
     setRecipe((rows) => rows.filter((_, i) => i !== index))
   }
 
+  function onMaterialCreated(material: RawMaterial) {
+    setMaterials((prev) =>
+      [...prev.filter((m) => m.id !== material.id), material].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      )
+    )
+    setRecipe((rows) => [...rows, { material_id: material.id, quantity: 1 }])
+    setQuickMaterial(false)
+  }
+
   const totalCost = recipe.reduce((sum, row) => sum + materialCost(row.material_id) * row.quantity, 0)
+
+  // Preço automático: custo + margem. Só entra em ação quando a pessoa liga a
+  // opção (margin_percent deixa de ser null); senão o preço continua manual.
+  const autoPricing = form.margin_percent != null
+  const autoPrice = Math.round(totalCost * (1 + (form.margin_percent ?? 0) / 100) * 100) / 100
+
+  useEffect(() => {
+    if (form.margin_percent == null) return
+    setForm((f) => {
+      const next = Math.round(totalCost * (1 + (f.margin_percent ?? 0) / 100) * 100) / 100
+      return f.price === next ? f : { ...f, price: next }
+    })
+  }, [form.margin_percent, totalCost])
+
+  // Bloqueia cadastro repetido: mesmo nome + mesma categoria.
+  async function isDuplicate() {
+    const categoryId = form.category_id || null
+    const { data } = await supabase
+      .from('products')
+      .select('id, name, category_id')
+      .ilike('name', form.name.trim())
+    return (data ?? []).some(
+      (p) =>
+        p.id !== id &&
+        p.name.trim().toLowerCase() === form.name.trim().toLowerCase() &&
+        (p.category_id ?? null) === categoryId
+    )
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const payload = { ...form, category_id: form.category_id || null, cost_price: totalCost }
+
+    if (await isDuplicate()) {
+      setSaving(false)
+      alert('Já existe um produto com esse nome nessa categoria.')
+      return
+    }
+
+    const payload = {
+      ...form,
+      category_id: form.category_id || null,
+      cost_price: totalCost,
+      price: autoPricing ? autoPrice : form.price,
+    }
     const query = isEditing
       ? supabase.from('products').update(payload).eq('id', id).select().single()
       : supabase.from('products').insert(payload).select().single()
     const { data, error } = await query
     if (error || !data) {
       setSaving(false)
-      alert('Não foi possível salvar o produto.')
+      alert(
+        error?.code === '23505'
+          ? 'Já existe um produto com esse nome nessa categoria.'
+          : 'Não foi possível salvar o produto.'
+      )
       console.error(error)
       return
     }
@@ -201,7 +266,8 @@ export default function ProductForm() {
   }
 
   return (
-    <form onSubmit={handleSave}>
+    <>
+    <form onSubmit={handleSave} onKeyDown={advanceOnEnter}>
       <div className="admin-page-header">
         <Link to="/admin" className="admin-back-link">
           ← Produtos
@@ -272,7 +338,10 @@ export default function ProductForm() {
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleCreateCategory(e)
+                      if (e.key === 'Enter') {
+                        e.stopPropagation()
+                        handleCreateCategory(e)
+                      }
                       if (e.key === 'Escape') setAddingCategory(false)
                     }}
                   />
@@ -294,13 +363,68 @@ export default function ProductForm() {
                 </label>
                 <div className="price-field">
                   <span className="prefix">R$</span>
-                  <CurrencyInput
-                    id="price"
-                    value={form.price}
-                    onChange={(v) => setForm({ ...form, price: v ?? 0 })}
-                    required
-                  />
+                  {autoPricing ? (
+                    <input
+                      id="price"
+                      type="text"
+                      readOnly
+                      tabIndex={-1}
+                      value={autoPrice.toFixed(2).replace('.', ',')}
+                    />
+                  ) : (
+                    <CurrencyInput
+                      id="price"
+                      value={form.price}
+                      onChange={(v) => setForm({ ...form, price: v ?? 0 })}
+                      required
+                    />
+                  )}
                 </div>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.85rem',
+                    color: 'var(--charcoal)',
+                    marginTop: 8,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={autoPricing}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        margin_percent: e.target.checked ? f.margin_percent ?? 100 : null,
+                      }))
+                    }
+                  />
+                  Calcular pelo custo + margem
+                </label>
+                {autoPricing && (
+                  <>
+                    <div className="price-field" style={{ marginTop: 8 }}>
+                      <span className="prefix">%</span>
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        aria-label="Margem sobre o custo"
+                        value={form.margin_percent ?? 0}
+                        onChange={(e) =>
+                          setForm({ ...form, margin_percent: Number(e.target.value) })
+                        }
+                      />
+                    </div>
+                    <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: 'var(--charcoal)' }}>
+                      Custo {totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} + {form.margin_percent ?? 0}% ={' '}
+                      <strong>
+                        {autoPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </strong>
+                    </p>
+                  </>
+                )}
               </div>
               <div className="form-field">
                 <label className="form-field-label" htmlFor="stock">
@@ -459,9 +583,18 @@ export default function ProductForm() {
                 </div>
               )
             })}
-            <button type="button" className="ghost-button small" onClick={addRecipeRow}>
-              + Adicionar material
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" className="ghost-button small" onClick={addRecipeRow}>
+                + Adicionar material
+              </button>
+              <button
+                type="button"
+                className="ghost-button small"
+                onClick={() => setQuickMaterial(true)}
+              >
+                + Cadastrar matéria-prima
+              </button>
+            </div>
             <div className="form-field" style={{ marginTop: 16 }}>
               <span className="form-field-label">Preço de custo do produto</span>
               <p style={{ margin: 0, fontWeight: 600 }}>
@@ -549,5 +682,14 @@ export default function ProductForm() {
         </button>
       </div>
     </form>
+
+    {quickMaterial && (
+      <MaterialQuickForm
+        suppliers={suppliers}
+        onClose={() => setQuickMaterial(false)}
+        onCreated={onMaterialCreated}
+      />
+    )}
+    </>
   )
 }

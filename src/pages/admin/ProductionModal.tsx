@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase, type Product } from '../../lib/supabase'
+import { advanceOnEnter } from '../../lib/formNav'
 
 type Props = {
   product: Product
@@ -43,7 +44,7 @@ export default function ProductionModal({ product, onClose, onSaved }: Props) {
         <p style={{ fontSize: '0.85rem', color: 'var(--charcoal)', marginBottom: 16 }}>
           {product.name} — estoque atual: {product.stock}
         </p>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} onKeyDown={advanceOnEnter}>
           <div className="form-field">
             <label className="form-field-label" htmlFor="quantity">
               Quantidade produzida

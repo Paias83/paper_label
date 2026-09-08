@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, type Supplier } from '../../../lib/supabase'
 import CurrencyInput from '../../../components/CurrencyInput'
+import { advanceOnEnter } from '../../../lib/formNav'
 
 const UNITS = ['un', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'cx', 'pct', 'kWh', 'hora']
 
@@ -52,9 +53,33 @@ export default function MaterialForm() {
       })
   }, [id, isEditing])
 
+  const norm = (v: string | null | undefined) => (v ?? '').trim().toLowerCase()
+
+  // Bloqueia cadastro repetido: mesmo nome + mesma cor + mesma marca.
+  async function isDuplicate() {
+    const { data } = await supabase
+      .from('raw_materials')
+      .select('id, name, color, brand')
+      .ilike('name', form.name.trim())
+    return (data ?? []).some(
+      (m) =>
+        m.id !== id &&
+        norm(m.name) === norm(form.name) &&
+        norm(m.color) === norm(form.color) &&
+        norm(m.brand) === norm(form.brand)
+    )
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
+
+    if (await isDuplicate()) {
+      setSaving(false)
+      alert('Já existe uma matéria-prima com esse nome, cor e marca.')
+      return
+    }
+
     const payload = {
       ...form,
       supplier_id: form.supplier_id || null,
@@ -66,7 +91,11 @@ export default function MaterialForm() {
       const { error } = await supabase.from('raw_materials').update(payload).eq('id', id)
       setSaving(false)
       if (error) {
-        alert('Não foi possível salvar a matéria-prima.')
+        alert(
+          error.code === '23505'
+            ? 'Já existe uma matéria-prima com esse nome, cor e marca.'
+            : 'Não foi possível salvar a matéria-prima.'
+        )
         console.error(error)
         return
       }
@@ -77,7 +106,11 @@ export default function MaterialForm() {
     const { data, error } = await supabase.from('raw_materials').insert(payload).select().single()
     if (error || !data) {
       setSaving(false)
-      alert('Não foi possível salvar a matéria-prima.')
+      alert(
+        error?.code === '23505'
+          ? 'Já existe uma matéria-prima com esse nome, cor e marca.'
+          : 'Não foi possível salvar a matéria-prima.'
+      )
       console.error(error)
       return
     }
@@ -102,7 +135,7 @@ export default function MaterialForm() {
   }
 
   return (
-    <form onSubmit={handleSave}>
+    <form onSubmit={handleSave} onKeyDown={advanceOnEnter}>
       <div className="admin-page-header">
         <Link to="/admin/estoque" className="admin-back-link">
           ← Matérias-primas

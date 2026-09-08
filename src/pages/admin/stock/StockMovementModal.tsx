@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase, type RawMaterial, type Supplier } from '../../../lib/supabase'
 import CurrencyInput from '../../../components/CurrencyInput'
+import { advanceOnEnter } from '../../../lib/formNav'
 
 type Props = {
   material?: RawMaterial | null
@@ -74,7 +75,7 @@ export default function StockMovementModal({
             Estoque atual: {material.stock} {material.unit}
           </p>
         )}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} onKeyDown={advanceOnEnter}>
           {!fixedMaterial && (
             <div className="form-field">
               <label className="form-field-label" htmlFor="material">

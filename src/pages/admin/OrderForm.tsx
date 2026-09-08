@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, type Product, type ShippingAddress } from '../../lib/supabase'
 import CurrencyInput from '../../components/CurrencyInput'
 import AddressForm from '../../components/AddressForm'
+import { advanceOnEnter } from '../../lib/formNav'
 
 type ItemRow = { product_id: string; quantity: number; price_at_purchase: number }
 
@@ -164,7 +165,7 @@ export default function OrderForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} onKeyDown={advanceOnEnter}>
       <div className="admin-page-header">
         <Link to="/admin/pedidos" className="admin-back-link">
           ← Pedidos

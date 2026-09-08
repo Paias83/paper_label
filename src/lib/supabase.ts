@@ -19,11 +19,13 @@ export type Product = {
   description: string | null
   price: number
   cost_price: number
+  margin_percent: number | null
   category_id: string | null
   stock: number
   images: string[]
   active: boolean
   featured: boolean
+  archived: boolean
   weight_kg: number
   width_cm: number
   height_cm: number

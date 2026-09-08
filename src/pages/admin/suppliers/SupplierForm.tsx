@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
+import { advanceOnEnter } from '../../../lib/formNav'
 
 const emptyForm = {
   name: '',
@@ -53,7 +54,7 @@ export default function SupplierForm() {
   }
 
   return (
-    <form onSubmit={handleSave}>
+    <form onSubmit={handleSave} onKeyDown={advanceOnEnter}>
       <div className="admin-page-header">
         <Link to="/admin/fornecedores" className="admin-back-link">
           ← Fornecedores
