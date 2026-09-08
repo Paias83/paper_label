@@ -117,9 +117,7 @@ export default function MaterialsList() {
                       >
                         − Saída
                       </button>
-                      <Link to={`/admin/estoque/${m.id}`} className="table-action-link">
-                        Editar
-                      </Link>
+                      <Link to={`/admin/estoque/${m.id}`}>Editar</Link>
                     </div>
                   </td>
                 </tr>

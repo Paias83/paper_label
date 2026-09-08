@@ -1692,7 +1692,10 @@ a { color: inherit; }
   white-space: nowrap;
 }
 
-.movement-actions button {
+.movement-actions button,
+.movement-actions a {
+  display: inline-flex;
+  align-items: center;
   border: 1px solid var(--hairline);
   background: var(--paper-raised);
   border-radius: 10px;
@@ -1700,9 +1703,16 @@ a { color: inherit; }
   padding: 0 12px;
   font-size: 0.8rem;
   font-family: var(--font-body);
+  color: var(--charcoal);
+  text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
   transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.movement-actions a:hover {
+  border-color: var(--wine);
+  color: var(--wine);
 }
 
 .movement-actions .entrada {

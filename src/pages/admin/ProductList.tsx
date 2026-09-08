@@ -177,9 +177,7 @@ export default function ProductList() {
                         <button type="button" className="entrada" onClick={() => setProducing(p)}>
                           + Produção
                         </button>
-                        <Link to={`/admin/produtos/${p.id}`} className="table-action-link">
-                          Editar
-                        </Link>
+                        <Link to={`/admin/produtos/${p.id}`}>Editar</Link>
                       </>
                     )}
                     <button type="button" className="saida" onClick={() => removeProduct(p)}>
