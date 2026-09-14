@@ -2,8 +2,11 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
+type ProfileSummary = { name: string | null }
+
 type AuthContextValue = {
   user: User | null
+  profile: ProfileSummary | null
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -12,26 +15,42 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<ProfileSummary | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null)
-      setLoading(false)
+    let active = true
+
+    async function loadProfile(nextUser: User | null) {
+      setUser(nextUser)
+      if (!nextUser) {
+        if (active) setProfile(null)
+        return
+      }
+      const { data } = await supabase.from('profiles').select('name').eq('id', nextUser.id).single()
+      if (active) setProfile(data)
+    }
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      await loadProfile(data.session?.user ?? null)
+      if (active) setLoading(false)
     })
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+      loadProfile(session?.user ?? null)
     })
 
-    return () => subscription.subscription.unsubscribe()
+    return () => {
+      active = false
+      subscription.subscription.unsubscribe()
+    }
   }, [])
 
   async function signOut() {
     await supabase.auth.signOut()
   }
 
-  return <AuthContext.Provider value={{ user, loading, signOut }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, profile, loading, signOut }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

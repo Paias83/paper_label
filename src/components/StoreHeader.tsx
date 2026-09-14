@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { LogIn, ShoppingBag, UserRound } from 'lucide-react'
+import { ChevronDown, LogIn, ShoppingBag, UserRound } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 
 export default function StoreHeader() {
   const { items } = useCart()
-  const { user, loading, signOut } = useAuth()
+  const { user, profile, loading, signOut } = useAuth()
   const count = items.reduce((sum, i) => sum + i.quantity, 0)
   const [pendingQuotes, setPendingQuotes] = useState(0)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!user) {
@@ -25,6 +27,16 @@ export default function StoreHeader() {
       .then(({ count }) => setPendingQuotes(count ?? 0))
   }, [user])
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   return (
     <header className="site-header">
       <nav>
@@ -35,16 +47,34 @@ export default function StoreHeader() {
       </Link>
       <div className="header-actions">
         {!loading && user ? (
-          <div className="header-account">
-            <UserRound size={18} />
-            <span>{user.email?.split('@')[0]}</span>
-            <Link to="/meus-orcamentos" className="header-action" style={{ fontSize: '0.85rem' }}>
-              Meus orçamentos
+          <div className="header-account" ref={menuRef}>
+            <button className="header-account-trigger" onClick={() => setMenuOpen((open) => !open)}>
+              <UserRound size={18} />
+              <span>Olá, {profile?.name || user.email}</span>
               {pendingQuotes > 0 && <span className="nav-badge">{pendingQuotes}</span>}
-            </Link>
-            <button className="header-signout" onClick={() => signOut()}>
-              Sair
+              <ChevronDown size={14} />
             </button>
+            {menuOpen && (
+              <div className="header-account-menu">
+                <Link
+                  to="/meus-orcamentos"
+                  className="header-account-menu-item"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Meus orçamentos
+                  {pendingQuotes > 0 && <span className="nav-badge">{pendingQuotes}</span>}
+                </Link>
+                <button
+                  className="header-account-menu-item"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    signOut()
+                  }}
+                >
+                  Sair
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <Link to="/entrar" className="header-action">

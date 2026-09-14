@@ -8,6 +8,7 @@ import Catalog from './pages/store/Catalog'
 import ProductPage from './pages/store/ProductPage'
 import Cart from './pages/store/Cart'
 import Login from './pages/store/Login'
+import CompleteRegistration from './pages/store/CompleteRegistration'
 import QuoteRequestForm from './pages/store/QuoteRequestForm'
 import MyQuotes from './pages/store/MyQuotes'
 import QuoteThread from './pages/store/QuoteThread'
@@ -41,6 +42,7 @@ export default function App() {
               <Route path="/produto/:id" element={<ProductPage />} />
               <Route path="/carrinho" element={<Cart />} />
               <Route path="/entrar" element={<Login />} />
+              <Route path="/completar-cadastro" element={<CompleteRegistration />} />
               <Route path="/personalizados/novo" element={<QuoteRequestForm />} />
               <Route path="/meus-orcamentos" element={<MyQuotes />} />
               <Route path="/meus-orcamentos/:id" element={<QuoteThread />} />

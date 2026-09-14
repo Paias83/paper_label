@@ -10,7 +10,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// PKCE em vez do implicit flow (padrão do supabase-js): o link do e-mail
+// carrega só um código que precisa ser trocado por sessão pelo mesmo
+// navegador que iniciou o pedido. Isso evita que o pré-fetch de links de
+// segurança do Gmail/Outlook consuma o token antes do clique real do usuário.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { flowType: 'pkce' },
+})
 
 // Tipos básicos das tabelas — expanda conforme o schema.sql
 export type Product = {
@@ -30,6 +36,16 @@ export type Product = {
   width_cm: number
   height_cm: number
   length_cm: number
+  created_at: string
+}
+
+export type Profile = {
+  id: string
+  name: string | null
+  phone: string | null
+  cpf: string | null
+  role: 'cliente' | 'admin'
+  addresses: ShippingAddress[]
   created_at: string
 }
 
