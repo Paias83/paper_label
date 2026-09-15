@@ -57,6 +57,13 @@ export default function StoreHeader() {
             {menuOpen && (
               <div className="header-account-menu">
                 <Link
+                  to="/meus-pedidos"
+                  className="header-account-menu-item"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Meus pedidos
+                </Link>
+                <Link
                   to="/meus-orcamentos"
                   className="header-account-menu-item"
                   onClick={() => setMenuOpen(false)}

@@ -832,6 +832,52 @@ a { color: inherit; }
   display: block;
 }
 
+.order-card {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--paper-raised);
+  overflow: hidden;
+}
+
+.order-card-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-body);
+  color: inherit;
+}
+
+.order-card-summary:hover {
+  background: rgba(107, 31, 42, 0.04);
+}
+
+.order-card-detail {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--hairline);
+  display: grid;
+  gap: 8px;
+}
+
+.order-card-items {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.order-card-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+}
+
 .type-badge.quote-status-solicitado {
   color: var(--charcoal);
   background: rgba(58, 54, 46, 0.1);
@@ -854,6 +900,33 @@ a { color: inherit; }
 
 .type-badge.quote-status-recusado,
 .type-badge.quote-status-cancelado {
+  color: var(--danger);
+  background: rgba(161, 58, 47, 0.1);
+}
+
+.type-badge.order-status-pendente {
+  color: var(--charcoal);
+  background: rgba(58, 54, 46, 0.1);
+}
+
+.type-badge.order-status-pago {
+  color: var(--brass);
+  background: rgba(176, 141, 87, 0.15);
+}
+
+.type-badge.order-status-enviado,
+.type-badge.order-status-pronto_para_retirada {
+  color: var(--wine);
+  background: rgba(107, 31, 42, 0.12);
+}
+
+.type-badge.order-status-entregue,
+.type-badge.order-status-retirado {
+  color: var(--success);
+  background: rgba(63, 93, 67, 0.12);
+}
+
+.type-badge.order-status-cancelado {
   color: var(--danger);
   background: rgba(161, 58, 47, 0.1);
 }

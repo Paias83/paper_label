@@ -11,6 +11,7 @@ import Login from './pages/store/Login'
 import CompleteRegistration from './pages/store/CompleteRegistration'
 import QuoteRequestForm from './pages/store/QuoteRequestForm'
 import MyQuotes from './pages/store/MyQuotes'
+import MyOrders from './pages/store/MyOrders'
 import QuoteThread from './pages/store/QuoteThread'
 
 import AdminLayout from './pages/admin/AdminLayout'
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="/completar-cadastro" element={<CompleteRegistration />} />
               <Route path="/personalizados/novo" element={<QuoteRequestForm />} />
               <Route path="/meus-orcamentos" element={<MyQuotes />} />
+              <Route path="/meus-pedidos" element={<MyOrders />} />
               <Route path="/meus-orcamentos/:id" element={<QuoteThread />} />
             </Route>
 
