@@ -1210,6 +1210,52 @@ a { color: inherit; }
   color: var(--charcoal);
 }
 
+.customer-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--paper-raised);
+  font-size: 0.9rem;
+}
+
+.customer-search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(28, 27, 25, 0.12);
+  padding: 6px;
+  z-index: 20;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.customer-search-results button {
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--charcoal);
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.customer-search-results button:hover {
+  background: rgba(107, 31, 42, 0.08);
+  color: var(--wine);
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

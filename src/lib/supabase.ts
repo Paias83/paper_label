@@ -42,10 +42,12 @@ export type Product = {
 export type Profile = {
   id: string
   name: string | null
+  email: string | null
   phone: string | null
   cpf: string | null
   role: 'cliente' | 'admin'
   addresses: ShippingAddress[]
+  registration_completed: boolean
   created_at: string
 }
 

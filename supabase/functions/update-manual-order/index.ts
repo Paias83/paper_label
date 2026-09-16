@@ -47,18 +47,29 @@ serve(async (req) => {
   }
 
   try {
-    const { order_id, customer_name, notes, items, shipping_type, address, shipping_cost, shipping_service, status } =
-      (await req.json()) as {
-        order_id: string
-        customer_name: string | null
-        notes: string | null
-        items: IncomingItem[]
-        shipping_type: 'entrega' | 'retirada'
-        address: IncomingAddress | null
-        shipping_cost: number
-        shipping_service: string | null
-        status: 'pendente' | 'pago'
-      }
+    const {
+      order_id,
+      user_id,
+      customer_name,
+      notes,
+      items,
+      shipping_type,
+      address,
+      shipping_cost,
+      shipping_service,
+      status,
+    } = (await req.json()) as {
+      order_id: string
+      user_id: string | null
+      customer_name: string | null
+      notes: string | null
+      items: IncomingItem[]
+      shipping_type: 'entrega' | 'retirada'
+      address: IncomingAddress | null
+      shipping_cost: number
+      shipping_service: string | null
+      status: 'pendente' | 'pago'
+    }
 
     if (!order_id) {
       return jsonResponse({ error: 'Pedido não informado.' }, 400)
@@ -125,6 +136,7 @@ serve(async (req) => {
     const { error: orderError } = await admin
       .from('orders')
       .update({
+        user_id: user_id || null,
         customer_name: customer_name || null,
         notes: notes || null,
         status,

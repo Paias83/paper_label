@@ -48,8 +48,12 @@ export default function CompleteRegistration() {
       }
       setUser(sessionUser)
 
-      const { data: profile } = await supabase.from('profiles').select('cpf').eq('id', sessionUser.id).single()
-      setStatus(profile?.cpf ? 'already-complete' : 'ready')
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('registration_completed')
+        .eq('id', sessionUser.id)
+        .single()
+      setStatus(profile?.registration_completed ? 'already-complete' : 'ready')
     })
   }, [])
 
@@ -98,6 +102,7 @@ export default function CompleteRegistration() {
         cpf: cpf.replace(/\D/g, ''),
         phone: phone.replace(/\D/g, ''),
         addresses: [address],
+        registration_completed: true,
       })
       .eq('id', user!.id)
 

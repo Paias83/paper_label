@@ -10,6 +10,7 @@
 
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { sendOrderStatusEmail } from '../_shared/orderEmail.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
@@ -48,8 +49,9 @@ serve(async (req) => {
   }
 
   try {
-    const { customer_name, notes, items, shipping_type, address, shipping_cost, shipping_service, status } =
+    const { user_id, customer_name, notes, items, shipping_type, address, shipping_cost, shipping_service, status } =
       (await req.json()) as {
+        user_id: string | null
         customer_name: string | null
         notes: string | null
         items: IncomingItem[]
@@ -93,7 +95,7 @@ serve(async (req) => {
     const { data: order, error: orderError } = await admin
       .from('orders')
       .insert({
-        user_id: null,
+        user_id: user_id || null,
         customer_name: customer_name || null,
         notes: notes || null,
         source: 'manual',
@@ -125,6 +127,7 @@ serve(async (req) => {
       const { error: fulfillError } = await admin.rpc('fulfill_order', { p_order_id: order.id })
       if (fulfillError) console.error('fulfill_order falhou:', fulfillError)
     }
+    await sendOrderStatusEmail(admin, order)
 
     return jsonResponse({ order_id: order.id })
   } catch (err) {

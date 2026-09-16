@@ -52,6 +52,8 @@ export default function Orders() {
       prev.map((o) => (o.id === id ? { ...o, status, admin_seen_at, last_status_change_by: 'admin' } : o))
     )
     await supabase.from('orders').update({ status, admin_seen_at, last_status_change_by: 'admin' }).eq('id', id)
+    // Best-effort — se o e-mail falhar, não trava a troca de status na UI.
+    supabase.functions.invoke('send-order-status-email', { body: { order_id: id } })
   }
 
   async function toggleExpanded(order: Order) {

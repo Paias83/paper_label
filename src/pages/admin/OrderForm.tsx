@@ -6,6 +6,7 @@ import AddressForm from '../../components/AddressForm'
 import { advanceOnEnter } from '../../lib/formNav'
 
 type ItemRow = { product_id: string; quantity: number; price_at_purchase: number }
+type CustomerOption = { id: string; name: string | null; email: string | null }
 
 const emptyAddress: ShippingAddress = {
   cep: '',
@@ -23,6 +24,9 @@ export default function OrderForm() {
   const isEditing = Boolean(id)
   const [products, setProducts] = useState<Product[]>([])
   const [customerName, setCustomerName] = useState('')
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(null)
+  const [customerQuery, setCustomerQuery] = useState('')
+  const [customerResults, setCustomerResults] = useState<CustomerOption[]>([])
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<ItemRow[]>([{ product_id: '', quantity: 1, price_at_purchase: 0 }])
   const [shippingType, setShippingType] = useState<'entrega' | 'retirada'>('retirada')
@@ -66,6 +70,14 @@ export default function OrderForm() {
         return
       }
       setCustomerName(order.customer_name ?? '')
+      if (order.user_id) {
+        supabase
+          .from('profiles')
+          .select('id, name, email')
+          .eq('id', order.user_id)
+          .single()
+          .then(({ data }) => data && setSelectedCustomer(data))
+      }
       setNotes(order.notes ?? '')
       setShippingType(order.shipping_type === 'entrega' ? 'entrega' : 'retirada')
       setAddress(order.shipping_address ?? emptyAddress)
@@ -83,6 +95,34 @@ export default function OrderForm() {
     }
     loadOrder()
   }, [id])
+
+  useEffect(() => {
+    const term = customerQuery.trim()
+    if (term.length < 2) {
+      setCustomerResults([])
+      return
+    }
+    const timer = setTimeout(() => {
+      supabase
+        .from('profiles')
+        .select('id, name, email')
+        .or(`name.ilike.%${term}%,email.ilike.%${term}%`)
+        .limit(8)
+        .then(({ data }) => setCustomerResults(data ?? []))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [customerQuery])
+
+  function selectCustomer(customer: CustomerOption) {
+    setSelectedCustomer(customer)
+    setCustomerQuery('')
+    setCustomerResults([])
+    setCustomerName(customer.name || customer.email || '')
+  }
+
+  function clearCustomer() {
+    setSelectedCustomer(null)
+  }
 
   function addItem() {
     setItems((rows) => [...rows, { product_id: '', quantity: 1, price_at_purchase: 0 }])
@@ -124,6 +164,7 @@ export default function OrderForm() {
       {
         body: {
           ...(isEditing ? { order_id: id } : {}),
+          user_id: selectedCustomer?.id ?? null,
           customer_name: customerName.trim() || null,
           notes: notes.trim() || null,
           items: validItems,
@@ -177,14 +218,49 @@ export default function OrderForm() {
       </div>
 
       <div className="form-card">
+        <div className="form-field" style={{ position: 'relative' }}>
+          <label className="form-field-label">Cliente cadastrado (opcional)</label>
+          {selectedCustomer ? (
+            <div className="customer-chip">
+              <span>
+                {selectedCustomer.name || '(sem nome)'}
+                {selectedCustomer.email ? ` — ${selectedCustomer.email}` : ''}
+              </span>
+              <button type="button" className="ghost-button small" onClick={clearCustomer}>
+                Trocar
+              </button>
+            </div>
+          ) : (
+            <>
+              <input
+                type="text"
+                autoComplete="off"
+                placeholder="Buscar por nome ou e-mail…"
+                value={customerQuery}
+                onChange={(e) => setCustomerQuery(e.target.value)}
+              />
+              {customerResults.length > 0 && (
+                <div className="customer-search-results">
+                  {customerResults.map((c) => (
+                    <button type="button" key={c.id} onClick={() => selectCustomer(c)}>
+                      {c.name || '(sem nome)'}
+                      {c.email ? ` — ${c.email}` : ''}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
         <div className="form-field">
           <label className="form-field-label" htmlFor="customer_name">
-            Cliente (opcional)
+            Nome/referência exibido no pedido
           </label>
           <input
             id="customer_name"
             type="text"
-            placeholder="Nome ou referência do cliente"
+            autoComplete="off"
+            placeholder="Nome ou referência do cliente (venda sem conta cadastrada)"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
           />
