@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
-import type { User } from '@supabase/supabase-js'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import type { EmailOtpType, User } from '@supabase/supabase-js'
 import { supabase, type ShippingAddress } from '../../lib/supabase'
 import AddressForm, { isAddressComplete } from '../../components/AddressForm'
 import { formatCPF, isValidCPF } from '../../lib/cpf'
 
-type Status = 'loading' | 'ready' | 'no-session' | 'already-complete'
+type Status = 'loading' | 'ready' | 'no-session' | 'link-failed' | 'already-complete'
 
 const emptyAddress: ShippingAddress = {
   cep: '',
@@ -40,10 +40,34 @@ export default function CompleteRegistration() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
+    async function init() {
+      const params = new URLSearchParams(window.location.search)
+
+      // Link novo dos e-mails (?token_hash=...&type=email): confirmado aqui, pelo
+      // navegador que abriu o link — funciona em qualquer aparelho, ao contrário
+      // do ?code= do PKCE, que só vale no navegador onde o e-mail foi digitado.
+      // Também não é consumido pelo pré-fetch do Gmail (que não roda o JS da página).
+      const tokenHash = params.get('token_hash')
+      if (tokenHash) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: (params.get('type') as EmailOtpType | null) ?? 'email',
+        })
+        window.history.replaceState(null, '', window.location.pathname)
+        if (error) {
+          console.error(error)
+          setStatus('link-failed')
+          return
+        }
+      }
+
+      const { data } = await supabase.auth.getSession()
       const sessionUser = data.session?.user ?? null
       if (!sessionUser) {
-        setStatus('no-session')
+        // Veio de um link (?code= de outro navegador, expirado ou já usado): explica
+        // em vez de voltar calado para o login.
+        const cameFromLink = params.has('code') || params.has('error') || params.has('error_description')
+        setStatus(cameFromLink || tokenHash ? 'link-failed' : 'no-session')
         return
       }
       setUser(sessionUser)
@@ -54,7 +78,8 @@ export default function CompleteRegistration() {
         .eq('id', sessionUser.id)
         .single()
       setStatus(profile?.registration_completed ? 'already-complete' : 'ready')
-    })
+    }
+    init()
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -129,6 +154,21 @@ export default function CompleteRegistration() {
 
   if (status === 'no-session') {
     return <Navigate to="/entrar" replace />
+  }
+
+  if (status === 'link-failed') {
+    return (
+      <div className="container" style={{ padding: '40px 24px', maxWidth: 480 }}>
+        <h2>Esse link não funcionou</h2>
+        <p>
+          O link de confirmação pode ter expirado, já ter sido usado ou ter sido aberto em outro navegador. Seu e-mail
+          continua reservado: é só pedir um link novo e abrir o e-mail <strong>neste mesmo aparelho</strong>.
+        </p>
+        <Link className="seal-button" to="/entrar">
+          Receber um novo link
+        </Link>
+      </div>
+    )
   }
 
   if (status === 'already-complete') {
