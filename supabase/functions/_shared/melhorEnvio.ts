@@ -14,6 +14,15 @@ export type ShippingOption = { id: number; name: string; price: number; delivery
 
 export class ShippingQuoteError extends Error {}
 
+// Transportadoras que exigem agência de postagem (ou não podem ser compradas
+// via API) — não geram etiqueta pelo painel, então ficam fora do carrinho também.
+export const UNSUPPORTED_COMPANIES = ['azul', 'latam', 'buslog']
+
+export function isSupportedCompany(companyName: string | undefined) {
+  const name = (companyName ?? '').toLowerCase()
+  return !UNSUPPORTED_COMPANIES.some((c) => name.includes(c))
+}
+
 export async function quoteShipping(
   client: SupabaseClient,
   cepDestino: string,
@@ -71,7 +80,7 @@ export async function quoteShipping(
   // pra essa rota/pacote (ex: transportadora não atende a região) —
   // filtra pra só devolver opções realmente cotadas.
   return data
-    .filter((opt) => !opt.error && opt.price)
+    .filter((opt) => !opt.error && opt.price && isSupportedCompany(opt.company?.name))
     .map((opt) => ({
       id: opt.id,
       name: opt.name,

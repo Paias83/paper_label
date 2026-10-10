@@ -21,6 +21,7 @@
 
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isSupportedCompany } from '../_shared/melhorEnvio.ts'
 
 const MELHOR_ENVIO_TOKEN = Deno.env.get('MELHOR_ENVIO_TOKEN')!
 const STORE_ORIGIN_CEP = Deno.env.get('STORE_ORIGIN_CEP')!
@@ -31,9 +32,6 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ME_API = 'https://melhorenvio.com.br/api/v2/me'
 // Pacote genérico para itens sem medidas (orçamentos) — mesmo padrão do resto da loja.
 const GENERIC_PACKAGE = { weight: 0.3, width: 16, height: 4, length: 16 }
-// Pela documentação, essas transportadoras exigem agência de postagem (ou não
-// podem ser compradas via API) — ficam fora da lista para não falhar na compra.
-const UNSUPPORTED_COMPANIES = ['azul', 'latam', 'buslog']
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -185,7 +183,7 @@ async function handlePreview(admin: SupabaseClient, orderId: string) {
   // deno-lint-ignore no-explicit-any
   const options = (Array.isArray(quote) ? quote : [])
     .filter((o: any) => !o.error && o.price)
-    .filter((o: any) => !UNSUPPORTED_COMPANIES.some((c) => (o.company?.name ?? '').toLowerCase().includes(c)))
+    .filter((o: any) => isSupportedCompany(o.company?.name))
     .map((o: any) => {
       const pkg = o.packages?.[0]
       return {
