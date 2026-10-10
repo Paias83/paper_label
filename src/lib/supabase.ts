@@ -89,7 +89,11 @@ export type Order = {
   shipping_address: ShippingAddress | null
   shipping_cost: number
   shipping_service: string | null
+  shipping_service_id: number | null
   tracking_code: string | null
+  label_me_id: string | null
+  label_cost: number | null
+  label_created_at: string | null
   admin_seen_at: string | null
   last_status_change_by: 'sistema' | 'admin' | null
   created_at: string

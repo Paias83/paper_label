@@ -102,7 +102,12 @@ export default function Cart() {
             quantity: i.quantity,
             unit_price: i.product.price,
           })),
-          shipping: { type: deliveryMethod, service_name: selectedShipping.name, price: selectedShipping.price },
+          shipping: {
+            type: deliveryMethod,
+            service_id: selectedShipping.id,
+            service_name: selectedShipping.name,
+            price: selectedShipping.price,
+          },
           address: deliveryMethod === 'entrega' ? address : null,
         },
       })
@@ -117,7 +122,16 @@ export default function Cart() {
       window.location.href = data.init_point
     } catch (err) {
       console.error(err)
-      alert('Não foi possível iniciar o pagamento. Tente novamente.')
+      // A função responde { error } com status 4xx (ex: frete mudou, produto
+      // indisponível); o supabase-js guarda o corpo em error.context.
+      let message = 'Não foi possível iniciar o pagamento. Tente novamente.'
+      try {
+        const body = await (err as { context?: Response }).context?.json()
+        if (body?.error) message = body.error
+      } catch {
+        // corpo não era JSON — fica a mensagem genérica
+      }
+      alert(message)
     } finally {
       setPaying(false)
     }

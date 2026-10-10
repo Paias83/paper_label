@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, type Order, type OrderItem, type Product, type QuoteRequest } from '../../lib/supabase'
+import { callShippingLabel, type LabelLinks } from '../../lib/shippingLabel'
+import ShippingLabelModal, { LabelResult } from './ShippingLabelModal'
 
 const STATUS_OPTIONS_ENTREGA: Order['status'][] = ['pendente', 'pago', 'enviado', 'entregue', 'cancelado']
 const STATUS_OPTIONS_RETIRADA: Order['status'][] = [
@@ -28,6 +30,10 @@ export default function Orders() {
   const [savingTracking, setSavingTracking] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [showCancelled, setShowCancelled] = useState(false)
+  const [labelOrder, setLabelOrder] = useState<Order | null>(null)
+  const [labelLinks, setLabelLinks] = useState<Record<string, LabelLinks>>({})
+  const [labelBusy, setLabelBusy] = useState<string | null>(null)
+  const [labelError, setLabelError] = useState<Record<string, string>>({})
 
   async function load() {
     const [ordersRes, itemsRes, productsRes, quotesRes] = await Promise.all([
@@ -77,6 +83,42 @@ export default function Orders() {
     await supabase.from('orders').update({ tracking_code }).eq('id', id)
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, tracking_code } : o)))
     setSavingTracking(null)
+  }
+
+  // Relê o pedido do banco depois de mexer na etiqueta (label_*, tracking_code).
+  async function refreshOrder(id: string) {
+    const { data } = await supabase.from('orders').select('*').eq('id', id).single()
+    if (data) setOrders((prev) => prev.map((o) => (o.id === id ? data : o)))
+  }
+
+  async function labelAction(order: Order, action: 'print' | 'cancel') {
+    if (
+      action === 'cancel' &&
+      !window.confirm('Cancelar a etiqueta? O valor volta para a carteira do Melhor Envio em até 12h.')
+    ) {
+      return
+    }
+    setLabelBusy(order.id)
+    setLabelError((prev) => ({ ...prev, [order.id]: '' }))
+    try {
+      if (action === 'print') {
+        const links = await callShippingLabel<LabelLinks>('print', order.id)
+        setLabelLinks((prev) => ({ ...prev, [order.id]: links }))
+      } else {
+        await callShippingLabel('cancel', order.id)
+        setLabelLinks((prev) => {
+          const next = { ...prev }
+          delete next[order.id]
+          return next
+        })
+        setTrackingDrafts((prev) => ({ ...prev, [order.id]: '' }))
+      }
+      await refreshOrder(order.id)
+    } catch (err) {
+      setLabelError((prev) => ({ ...prev, [order.id]: (err as Error).message }))
+    } finally {
+      setLabelBusy(null)
+    }
   }
 
   function itemName(item: OrderItem) {
@@ -272,6 +314,66 @@ export default function Orders() {
                         </div>
                         )}
 
+                        {o.shipping_type !== 'retirada' && o.shipping_address && (
+                          <div style={{ margin: '8px 0 12px' }}>
+                            {o.label_me_id ? (
+                              <>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <strong>Etiqueta:</strong>
+                                  <span>
+                                    comprada
+                                    {o.label_created_at &&
+                                      ` em ${new Date(o.label_created_at).toLocaleDateString('pt-BR')}`}
+                                    {o.label_cost != null && (
+                                      <>
+                                        {' '}— <span className="price">
+                                          {Number(o.label_cost).toLocaleString('pt-BR', {
+                                            style: 'currency',
+                                            currency: 'BRL',
+                                          })}
+                                        </span>
+                                      </>
+                                    )}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="ghost-button small"
+                                    disabled={labelBusy === o.id}
+                                    onClick={() => labelAction(o, 'print')}
+                                  >
+                                    {labelBusy === o.id ? 'Aguarde…' : 'Imprimir etiqueta'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ghost-button small"
+                                    disabled={labelBusy === o.id}
+                                    onClick={() => labelAction(o, 'cancel')}
+                                  >
+                                    Cancelar etiqueta
+                                  </button>
+                                </div>
+                                {labelLinks[o.id] && (
+                                  <div style={{ marginTop: 8 }}>
+                                    <LabelResult links={labelLinks[o.id]} />
+                                  </div>
+                                )}
+                              </>
+                            ) : o.status === 'pago' ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <strong>Etiqueta:</strong>
+                                <button type="button" className="ghost-button small" onClick={() => setLabelOrder(o)}>
+                                  Gerar etiqueta (Melhor Envio)
+                                </button>
+                              </div>
+                            ) : null}
+                            {labelError[o.id] && (
+                              <p className="checkout-error" style={{ marginTop: 6 }}>
+                                {labelError[o.id]}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
                         {orderItems.length === 0 ? (
                           <p style={{ color: 'var(--charcoal)', margin: '8px 0' }}>
                             Sem itens registrados (pedido criado antes do fluxo atual, ou ainda pendente de pagamento).
@@ -324,6 +426,22 @@ export default function Orders() {
           </tbody>
         </table>
       </div>
+
+      {labelOrder && (
+        <ShippingLabelModal
+          order={labelOrder}
+          onClose={() => setLabelOrder(null)}
+          onBought={(links) => {
+            setLabelLinks((prev) => ({ ...prev, [labelOrder.id]: links }))
+            setTrackingDrafts((prev) => {
+              const next = { ...prev }
+              delete next[labelOrder.id]
+              return next
+            })
+            refreshOrder(labelOrder.id)
+          }}
+        />
+      )}
     </div>
   )
 }

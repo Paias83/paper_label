@@ -71,6 +71,20 @@ serve(async (req) => {
     const pid = String(paymentId)
 
     if (payment.status === 'approved') {
+      // Confere o valor pago com o total do pedido (gravado pelo servidor). Pagamento
+      // menor = preferência adulterada: não libera o pedido, só sinaliza no painel.
+      const { data: current } = await admin.from('orders').select('total').eq('id', orderId).maybeSingle()
+      if (current && Number(payment.transaction_amount) + 0.01 < Number(current.total)) {
+        console.error(
+          `Pagamento ${pid} do pedido ${orderId} veio com R$ ${payment.transaction_amount}, total é R$ ${current.total} — não marcado como pago.`
+        )
+        await admin
+          .from('orders')
+          .update({ mp_payment_id: pid, admin_seen_at: null, last_status_change_by: 'sistema' })
+          .eq('id', orderId)
+        return new Response('ok', { status: 200 })
+      }
+
       // Só processa uma vez: o pedido precisa estar pendente (ou cancelado, caso o
       // cliente pague depois). Se já foi pago/enviado/entregue, uma notificação
       // repetida do MP não pode voltar o status nem rodar o fulfillment de novo.
