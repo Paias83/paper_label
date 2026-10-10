@@ -64,11 +64,11 @@ removido.
 |---|---|---|
 | `create-preference` | cria pedido `pendente` + preferência no Mercado Pago (Checkout Pro); exige `shipping`/`address` no body quando é entrega | `MP_ACCESS_TOKEN` |
 | `create-quote-order` | igual à anterior, mas a partir de orçamento aprovado | `MP_ACCESS_TOKEN` |
-| `mp-webhook` | notificação do MP → atualiza status e chama `fulfill_order` | `MP_ACCESS_TOKEN` |
+| `mp-webhook` | notificação do MP → aprovado: `pago` + `fulfill_order`; Pix/boleto/análise/recusado: só e-mail (pedido segue `pendente`); `cancelled` (Pix/boleto vencido): cancela | `MP_ACCESS_TOKEN` |
 | `calculate-shipping` | cotação no Melhor Envio (peso/medidas lidos do banco, nunca do cliente) | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
 | `create-manual-order` / `update-manual-order` | pedido manual do admin (checam `role='admin'` pelo JWT) | — |
 | `send-order-status-email` | admin-only; chamada por `Orders.tsx` ao mudar status | `RESEND_API_KEY` |
-| `_shared/orderEmail.ts` | `sendOrderStatusEmail(admin, order)` via API HTTP do Resend | |
+| `_shared/orderEmail.ts` | `sendOrderStatusEmail` (por status) e `sendPaymentNoticeEmail` (Pix/boleto, análise, recusa) via API HTTP do Resend; HTML com itens/total no visual da loja | |
 
 Todas também usam `SUPABASE_URL`, `SUPABASE_ANON_KEY` e/ou `SUPABASE_SERVICE_ROLE_KEY`.
 O CLI já está linkado ao projeto. Deploy:
@@ -159,8 +159,13 @@ logs das Edge Functions no dashboard do Supabase.
   `noreply@studiopaper.com.br`. Se a confirmação não chegar, conferir nesta ordem:
   (1) toggle "Confirm email" em Authentication → Providers → Email está ON;
   (2) log de e-mails do Resend mostra tentativa; (3) "bounced" = endereço errado.
-- **Status de pedido**: API HTTP do Resend (`RESEND_API_KEY`), enviado a cada mudança
-  de status, remetente `contato@studiopaper.com.br`.
+- **Status de pedido / pagamento**: API HTTP do Resend (`RESEND_API_KEY`), remetente
+  `contato@studiopaper.com.br`. Compra na loja não manda e-mail ao criar o pedido (cliente
+  pode desistir no MP); o primeiro aviso vem do `mp-webhook`. Avisos de tentativa de
+  pagamento saem uma vez por pagamento (dedup por `orders.mp_payment_id`). Cartão recusado
+  **não** cancela o pedido (no Checkout Pro o cliente tenta de novo); vencimento só cancela
+  se for a última tentativa (`mp_payment_id` igual). Pedido manual pendente com cliente
+  ainda recebe "Recebemos seu pedido".
 - `contato@studiopaper.com.br` é uma caixa real no Zoho Mail (plano grátis, só webmail).
 - PKCE (`flowType: 'pkce'`) é obrigatório: o pré-fetch de links do Gmail/Outlook
   consumia o token implicit e o usuário caía em `otp_expired`. Esse bug não reproduz
