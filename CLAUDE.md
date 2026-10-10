@@ -195,7 +195,7 @@ logs das Edge Functions no dashboard do Supabase.
   `ShippingLabelModal.tsx`): sem nota fiscal (`non_commercial: true`, o Melhor Envio
   emite a DC-e; o DACE vai junto do pacote). Remetente = cadastro da conta no Melhor
   Envio (`GET /me`), para não ter CPF no repo. Só 1 volume; Azul/LATAM/Buslog ficam de
-  fora (exigem agência). `orders.shipping_service_id` pré-seleciona o serviço;
+  fora também do carrinho (exigem agência; filtro em `_shared/melhorEnvio.ts`). `orders.shipping_service_id` pré-seleciona o serviço;
   `label_me_id`/`label_cost`/`label_created_at` voltam a nulo ao cancelar. O token
   precisa das permissões de carrinho, compra, geração, impressão, rastreio,
   cancelamento e leitura de usuário/saldo. Status "enviado" continua manual.
