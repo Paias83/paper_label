@@ -171,6 +171,12 @@ logs das Edge Functions no dashboard do Supabase.
 - PKCE (`flowType: 'pkce'`) é obrigatório: o pré-fetch de links do Gmail/Outlook
   consumia o token implicit e o usuário caía em `otp_expired`. Esse bug não reproduz
   com `curl`, só com caixa de e-mail real.
+- Mas o `?code=` do PKCE só funciona no navegador onde o e-mail foi digitado (aberto no
+  celular/app do Gmail falhava). Por isso os modelos **Confirm signup** e **Magic Link**
+  (painel do Supabase → Auth → Email Templates) usam
+  `https://www.studiopaper.com.br/completar-cadastro?token_hash={{ .TokenHash }}&type=email`,
+  e `CompleteRegistration.tsx` confirma com `verifyOtp`. Template mal formado (chaves
+  `{{ }}` sobrando) quebra o envio.
 - DNS no Registro.br: o editor não edita registro no lugar — apagar o antigo e criar o
   novo antes de um único "Salvar alterações". Não aceita `@` como nome (usar o domínio
   completo).
