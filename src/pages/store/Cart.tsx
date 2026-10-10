@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
@@ -43,6 +43,9 @@ export default function Cart() {
   const [selectedShippingId, setSelectedShippingId] = useState<number | null>(null)
   const [shippingLoading, setShippingLoading] = useState(false)
   const [shippingError, setShippingError] = useState('')
+  const [addressFromProfile, setAddressFromProfile] = useState(false)
+  // Descarta respostas de cotações antigas (CEP/quantidade mudou no meio do caminho).
+  const quoteRequestId = useRef(0)
 
   const selectedShipping =
     deliveryMethod === 'retirada' ? PICKUP_OPTION : shippingOptions.find((o) => o.id === selectedShippingId) ?? null
@@ -50,20 +53,49 @@ export default function Cart() {
   const canPay =
     deliveryMethod === 'retirada' ? true : isAddressComplete(address) && Boolean(selectedShipping)
 
+  // Pré-preenche com o endereço do cadastro (o cliente pode alterar à vontade).
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('profiles')
+      .select('addresses')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        const saved = (data?.addresses as ShippingAddress[] | null)?.[0]
+        if (!saved?.cep) return
+        setAddress((prev) => (prev.cep ? prev : { ...emptyAddress, ...saved }))
+        setAddressFromProfile(true)
+      })
+  }, [user?.id])
+
+  // Cota o frete sozinho sempre que houver CEP completo — e de novo se o CEP ou as
+  // quantidades mudarem. Mexer em número/complemento não apaga mais o frete.
+  const cepDigits = address.cep.replace(/\D/g, '')
+  const itemsKey = items.map((i) => `${i.product.id}:${i.quantity}`).join(',')
+  useEffect(() => {
+    if (deliveryMethod !== 'entrega' || cepDigits.length !== 8 || items.length === 0) {
+      quoteRequestId.current++
+      setShippingOptions([])
+      setSelectedShippingId(null)
+      setShippingLoading(false)
+      return
+    }
+    const timer = setTimeout(() => calculateShipping(cepDigits), 400)
+    return () => clearTimeout(timer)
+  }, [cepDigits, itemsKey, deliveryMethod])
+
   function handleAddressChange(next: ShippingAddress) {
     setAddress(next)
-    setShippingOptions([])
-    setSelectedShippingId(null)
   }
 
   function handleDeliveryMethodChange(next: DeliveryMethod) {
     setDeliveryMethod(next)
-    setShippingOptions([])
-    setSelectedShippingId(null)
     setShippingError('')
   }
 
   async function calculateShipping(cepDigits: string) {
+    const requestId = ++quoteRequestId.current
     setShippingLoading(true)
     setShippingError('')
     try {
@@ -73,18 +105,24 @@ export default function Cart() {
           items: items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
         },
       })
+      if (requestId !== quoteRequestId.current) return
       if (error) throw error
       if (!data.options?.length) {
+        setShippingOptions([])
+        setSelectedShippingId(null)
         setShippingError('Nenhuma opção de frete disponível para esse CEP.')
         return
       }
-      setShippingOptions(data.options)
-      setSelectedShippingId(data.options[0].id)
+      const options: ShippingOption[] = data.options
+      setShippingOptions(options)
+      // Mantém o serviço que o cliente já tinha escolhido, se ainda existir.
+      setSelectedShippingId((prev) => (options.some((o) => o.id === prev) ? prev : options[0].id))
     } catch (err) {
+      if (requestId !== quoteRequestId.current) return
       console.error(err)
       setShippingError('Não foi possível calcular o frete. Tente novamente.')
     } finally {
-      setShippingLoading(false)
+      if (requestId === quoteRequestId.current) setShippingLoading(false)
     }
   }
 
@@ -194,7 +232,12 @@ export default function Cart() {
               </div>
             ) : (
               <>
-                <AddressForm address={address} onChange={handleAddressChange} onCepResolved={calculateShipping} />
+                <AddressForm address={address} onChange={handleAddressChange} />
+                {addressFromProfile && (
+                  <p className="checkout-hint">
+                    Endereço do seu cadastro — altere os campos acima se quiser entregar em outro lugar.
+                  </p>
+                )}
 
                 {shippingLoading && <p className="checkout-hint">Calculando frete…</p>}
                 {shippingError && <p className="checkout-error">{shippingError}</p>}

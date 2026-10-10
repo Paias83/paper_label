@@ -15,17 +15,20 @@ export function isAddressComplete(address: ShippingAddress) {
 type AddressFormProps = {
   address: ShippingAddress
   onChange: (address: ShippingAddress) => void
-  onCepResolved?: (cepDigits: string) => void
   title?: string
 }
 
-export default function AddressForm({ address, onChange, onCepResolved, title = 'Endereço de entrega' }: AddressFormProps) {
+export default function AddressForm({ address, onChange, title = 'Endereço de entrega' }: AddressFormProps) {
   const [cepLoading, setCepLoading] = useState(false)
   const [cepError, setCepError] = useState('')
+  const [lookedUpCep, setLookedUpCep] = useState('')
 
-  async function handleCepBlur() {
-    const digits = address.cep.replace(/\D/g, '')
-    if (digits.length !== 8) return
+  // Busca rua/bairro/cidade no ViaCEP. Recebe o endereço atual porque é chamada
+  // logo após digitar o 8º dígito (antes do estado do pai atualizar).
+  async function lookupCep(current: ShippingAddress) {
+    const digits = current.cep.replace(/\D/g, '')
+    if (digits.length !== 8 || digits === lookedUpCep) return
+    setLookedUpCep(digits)
 
     setCepError('')
     setCepLoading(true)
@@ -38,14 +41,14 @@ export default function AddressForm({ address, onChange, onCepResolved, title = 
         return
       }
       onChange({
-        ...address,
+        ...current,
         street: data.logradouro ?? '',
         neighborhood: data.bairro ?? '',
         city: data.localidade ?? '',
         state: data.uf ?? '',
       })
-      onCepResolved?.(digits)
     } catch {
+      setLookedUpCep('') // falha de rede: deixa tentar de novo
       setCepError('Não foi possível buscar o CEP.')
     } finally {
       setCepLoading(false)
@@ -65,8 +68,13 @@ export default function AddressForm({ address, onChange, onCepResolved, title = 
             type="text"
             placeholder="00000-000"
             value={address.cep}
-            onChange={(e) => onChange({ ...address, cep: e.target.value })}
-            onBlur={handleCepBlur}
+            onChange={(e) => {
+              const next = { ...address, cep: e.target.value }
+              onChange(next)
+              // 8 dígitos digitados ou colados/autocompletados: busca sem esperar sair do campo.
+              if (next.cep.replace(/\D/g, '').length === 8) lookupCep(next)
+            }}
+            onBlur={() => lookupCep(address)}
             maxLength={9}
             required
           />

@@ -145,6 +145,7 @@ export default function Login() {
                 <input
                   id="email"
                   type="email"
+                  autoComplete="username"
                   placeholder="seu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -161,6 +162,8 @@ export default function Login() {
           {step === 'senha' && (
             <form onSubmit={handlePasswordSubmit} style={{ display: 'grid', gap: 12 }}>
               <p className="checkout-hint">{email}</p>
+              {/* E-mail oculto para o gerenciador de senhas saber de qual conta é a senha. */}
+              <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
               <div className="form-field">
                 <label className="form-field-label" htmlFor="password">
                   Senha
@@ -168,6 +171,7 @@ export default function Login() {
                 <input
                   id="password"
                   type="password"
+                  autoComplete="current-password"
                   placeholder="Sua senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

@@ -235,6 +235,9 @@ export default function CompleteRegistration() {
 
         <div className="form-card">
           <h3>Senha de acesso</h3>
+          {/* Diz ao gerenciador de senhas do navegador de qual e-mail é a senha —
+              sem isso o Chrome oferece "atualizar senha" da última conta salva. */}
+          <input type="email" name="username" autoComplete="username" value={user?.email ?? ''} readOnly hidden />
           <div className="form-row">
             <div className="form-field">
               <label className="form-field-label" htmlFor="password">
@@ -243,6 +246,7 @@ export default function CompleteRegistration() {
               <input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={8}
@@ -256,6 +260,7 @@ export default function CompleteRegistration() {
               <input
                 id="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 minLength={8}
