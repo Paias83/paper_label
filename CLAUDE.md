@@ -57,6 +57,10 @@ supabase/
 **Não existe página de checkout separada**: endereço, frete, totais e botão de pagar
 ficam dentro de `src/pages/store/Cart.tsx` (`/carrinho`). O antigo `Checkout.tsx` foi
 removido.
+O carrinho pré-preenche o endereço de `profiles.addresses[0]` e cota o frete sozinho
+quando há CEP completo (recalcula com CEP/quantidades). O carrinho em si fica no
+`localStorage` **por conta** (`papelaria_carrinho:<user_id|visitante>`, ver
+`CartContext.tsx`); o de visitante é mesclado na conta ao entrar.
 
 ## Edge Functions (`supabase/functions/`)
 
