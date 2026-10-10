@@ -62,10 +62,11 @@ removido.
 
 | Função | O que faz | Secrets |
 |---|---|---|
-| `create-preference` | cria pedido `pendente` + preferência no Mercado Pago (Checkout Pro); exige `shipping`/`address` no body quando é entrega | `MP_ACCESS_TOKEN` |
+| `create-preference` | cria pedido `pendente` + preferência no Mercado Pago (Checkout Pro). **Preço/nome dos produtos vêm do banco e o frete é recotado pelo `service_id`** — do body só usa ids, quantidades, serviço e endereço | `MP_ACCESS_TOKEN`, `MELHOR_ENVIO_TOKEN` |
 | `create-quote-order` | igual à anterior, mas a partir de orçamento aprovado | `MP_ACCESS_TOKEN` |
-| `mp-webhook` | notificação do MP → aprovado: `pago` + `fulfill_order`; Pix/boleto/análise/recusado: só e-mail (pedido segue `pendente`); `cancelled` (Pix/boleto vencido): cancela | `MP_ACCESS_TOKEN` |
-| `calculate-shipping` | cotação no Melhor Envio (peso/medidas lidos do banco, nunca do cliente) | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
+| `mp-webhook` | notificação do MP → aprovado (valor ≥ total do pedido): `pago` + `fulfill_order`; Pix/boleto/análise/recusado: só e-mail (pedido segue `pendente`); `cancelled` (Pix/boleto vencido): cancela | `MP_ACCESS_TOKEN` |
+| `calculate-shipping` | cotação no Melhor Envio (lógica em `_shared/melhorEnvio.ts`, peso/medidas lidos do banco) | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
+| `shipping-label` | admin-only; etiquetas do Melhor Envio: `preview` / `buy` (carrinho → compra com saldo da carteira → gera) / `print` (etiqueta + DACE) / `cancel` | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
 | `create-manual-order` / `update-manual-order` | pedido manual do admin (checam `role='admin'` pelo JWT) | — |
 | `send-order-status-email` | admin-only; chamada por `Orders.tsx` ao mudar status | `RESEND_API_KEY` |
 | `_shared/orderEmail.ts` | `sendOrderStatusEmail` (por status) e `sendPaymentNoticeEmail` (Pix/boleto, análise, recusa) via API HTTP do Resend; HTML com itens/total no visual da loja | |
@@ -190,6 +191,14 @@ logs das Edge Functions no dashboard do Supabase.
   `components/DeliveryMethodPicker.tsx` e `supabase/functions/_shared/orderEmail.ts`
   (se mudar, alterar nos dois e redeployar as functions de e-mail). Frete grátis na retirada; o MP rejeita
   item de preço 0, então a linha "Frete" não é enviada nesse caso.
+- **Etiquetas de envio** (Melhor Envio, botão no pedido pago em `Orders.tsx` →
+  `ShippingLabelModal.tsx`): sem nota fiscal (`non_commercial: true`, o Melhor Envio
+  emite a DC-e; o DACE vai junto do pacote). Remetente = cadastro da conta no Melhor
+  Envio (`GET /me`), para não ter CPF no repo. Só 1 volume; Azul/LATAM/Buslog ficam de
+  fora (exigem agência). `orders.shipping_service_id` pré-seleciona o serviço;
+  `label_me_id`/`label_cost`/`label_created_at` voltam a nulo ao cancelar. O token
+  precisa das permissões de carrinho, compra, geração, impressão, rastreio,
+  cancelamento e leitura de usuário/saldo. Status "enviado" continua manual.
 - Produtos sem peso/medidas reais usam pacote genérico (0,3 kg, 16×4×16 cm) — se um
   frete parecer errado, conferir as medidas do produto.
 
