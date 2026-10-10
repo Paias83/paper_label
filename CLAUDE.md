@@ -179,9 +179,8 @@ logs das Edge Functions no dashboard do Supabase.
 - Design "papel/lacre": marfim + vinho (`--wine`), cantos quase retos (`--radius: 2px`).
   Evitar visual genérico bege/terracota. Carrinho e admin usam o mesmo estilo de
   cartões/inputs (`.store-form`, `.shipping-option`, `.checkout-summary`).
-- Fonte do logo **July It** fica em `public/fonts/`, que está no `.gitignore`
-  (licença só para uso pessoal, aguardando licença comercial; o repo é público).
-  Ela **não vem no clone** — copiar manualmente para novos computadores.
+- Fonte do logo **July It** fica versionada em `public/fonts/` (licença comercial
+  adquirida em 2026-10-10; antes disso ficava fora do git por ser só uso pessoal).
 - Retirada no local: endereço e horário fixos em `PICKUP_INFO`, **duplicado** em
   `components/DeliveryMethodPicker.tsx` e `supabase/functions/_shared/orderEmail.ts`
   (se mudar, alterar nos dois e redeployar as functions de e-mail). Frete grátis na retirada; o MP rejeita
@@ -210,3 +209,20 @@ logs das Edge Functions no dashboard do Supabase.
 - Filtro por categoria fica na Home (`/?categoria=slug`); `/catalogo` só redireciona.
 - Instagram ativo na TopBar; TikTok removido até existir conta.
 - O `README.md` está desatualizado (descreve o scaffold inicial).
+
+## Notas no Obsidian
+
+A nota deste projeto fica no cofre do Obsidian:
+`C:\Users\alexandre.paias\Documents\Obsidian\Principal\10 Projetos\E-commerce Papelaria de Luxo.md`
+
+Ao concluir uma tarefa relevante (feature nova, decisão técnica, bug resolvido, mudança de deploy/stack),
+atualize essa nota antes de encerrar:
+- "Decisões técnicas": adicione uma linha na tabela (data, decisão, motivo)
+- "TODO": marque itens concluídos com [x] e adicione novos pendentes
+- "Problemas e soluções": registre o sintoma e a correção
+- "Funcionalidades" / "Stack": ajuste se algo mudou
+
+Soluções reutilizáveis em outros projetos vão para `20 Conhecimento\` no cofre
+(modelo: `90 Templates\Problema e solução.md`), com link [[E-commerce Papelaria de Luxo]].
+Siga as convenções de `C:\Users\alexandre.paias\Documents\Obsidian\Principal\CLAUDE.md`.
+Nunca grave senhas, tokens, chaves de API ou conteúdo de `.env` nas notas (o cofre vai para o GitHub).
