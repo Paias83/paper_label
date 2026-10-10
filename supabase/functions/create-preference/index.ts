@@ -11,7 +11,6 @@
 
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { sendOrderStatusEmail } from '../_shared/orderEmail.ts'
 
 const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -121,7 +120,8 @@ serve(async (req) => {
     )
     if (itemsError) throw itemsError
 
-    await sendOrderStatusEmail(admin, order)
+    // Sem e-mail aqui: o cliente pode desistir no Mercado Pago. O primeiro aviso
+    // sai do mp-webhook (Pix/boleto gerado, pagamento aprovado ou recusado).
 
     const preference = {
       items: [
