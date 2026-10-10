@@ -10,8 +10,7 @@ export default function StoreFooter() {
             Studio Paper
           </p>
           <p style={{ maxWidth: 320, color: 'var(--charcoal)', fontSize: '0.9rem' }}>
-            Cadernos encadernados à mão, papelaria de convite e acessórios de escrita,
-            selecionados para quem trata o papel como objeto — não como consumível.
+            Onde a delicadeza do papel artesanal encontra a precisão da tecnologia 3D, transformamos histórias em arte tátil.
           </p>
         </div>
         <div>

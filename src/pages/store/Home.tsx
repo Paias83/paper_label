@@ -179,23 +179,26 @@ export default function Home() {
       <section className="value-props container">
         <div className="value">
           <span className="mark">I</span>
-          <strong>Papel de algodão</strong>
+          <strong>3D Personalizados</strong>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--charcoal)' }}>
-            Miolo de alta gramatura, com textura que segura tinta e caneta-tinteiro sem borrar.
+            Criação de objetos tridimensionais exclusivos e sob medida que transformam 
+            inovação tecnológica em presentes afetivos e marcantes.
           </p>
         </div>
         <div className="value">
           <span className="mark">II</span>
-          <strong>Encadernação à mão</strong>
+          <strong>Itens de Decoração</strong>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--charcoal)' }}>
-            Cada exemplar passa pelas mãos de um encadernador antes de chegar até você.
+            Peças funcionais e elegantes, como vasos e ornamentos, 
+            voltadas para personalizar e harmonizar ambientes com estilo e sofisticação.
           </p>
         </div>
         <div className="value">
           <span className="mark">III</span>
-          <strong>Embalagem para presentear</strong>
+          <strong>Lembranças em Papelaria Personalizada</strong>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--charcoal)' }}>
-            Lacre de cera e papel de seda em toda encomenda, sem custo adicional.
+            Desenvolvimento de itens com acabamento artesanal e riquezas de detalhes 
+            que transformam festas e celebrações em recordações inesquecíveis.
           </p>
         </div>
       </section>
