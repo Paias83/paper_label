@@ -207,8 +207,9 @@ logs das Edge Functions no dashboard do Supabase.
   (rodapé + páginas legais). `STORE_INFO.document` = CNPJ, **nulo até o MEI sair**.
 - Cadastro exige aceite dos termos/política → `profiles.terms_accepted_at`.
 - Lista de compartilhamento de dados na política (Mercado Pago, Melhor Envio, Supabase,
-  Vercel, Resend, Zoho, ViaCEP, Google Fonts): **se adicionar um serviço que recebe dado
-  pessoal, atualizar a política**.
+  Vercel, Resend, Zoho, ViaCEP): **se adicionar um serviço que recebe dado pessoal,
+  atualizar a política**. Fontes são servidas pelo próprio site (Fontsource, importadas
+  em `main.tsx`) — não voltar para o Google Fonts.
 
 ## Convenções e decisões
 
@@ -260,7 +261,7 @@ logs das Edge Functions no dashboard do Supabase.
 - Instagram ativo na TopBar; TikTok removido até existir conta.
 - O `README.md` está desatualizado (descreve o scaffold inicial).
 - **LGPD pendente**: (1) CNPJ no `storeInfo.ts`; (2) botão "Excluir minha conta"
-  (anonimizar perfil, manter pedidos); (3) opcional: fontes locais em vez do Google Fonts.
+  (anonimizar perfil, manter pedidos).
 
 ## Notas no Obsidian
 

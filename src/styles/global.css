@@ -18,7 +18,7 @@
   --danger: #a13a2f;
 
   /* Tipografia */
-  --font-display: 'Fraunces', serif;      /* títulos, com personalidade */
+  --font-display: 'Fraunces Variable', 'Fraunces', serif; /* títulos, com personalidade */
   --font-body: 'Public Sans', sans-serif; /* texto corrido, legibilidade */
   --font-mono: 'IBM Plex Mono', monospace;/* preços, SKUs, quantidades */
   --font-logo: 'July It', cursive; /* assinatura da marca — Studio Paper */

@@ -111,8 +111,7 @@ export default function PrivacyPolicy() {
         Usamos apenas o armazenamento <strong>essencial</strong> para o site funcionar: manter você conectado à sua
         conta e lembrar os produtos do seu carrinho. O formulário de pagamento do Mercado Pago também usa recursos
         próprios de segurança para prevenir fraudes. <strong>Não usamos cookies de publicidade nem de rastreamento</strong>
-        . As fontes do site são carregadas do Google Fonts, que recebe o endereço IP do visitante para entregar os
-        arquivos.
+        .
       </p>
 
       <h2>7. Por quanto tempo guardamos</h2>
