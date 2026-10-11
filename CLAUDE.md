@@ -188,6 +188,8 @@ logs das Edge Functions no dashboard do Supabase.
   `https://www.studiopaper.com.br/completar-cadastro?token_hash={{ .TokenHash }}&type=email`,
   e `CompleteRegistration.tsx` confirma com `verifyOtp`. Template mal formado (chaves
   `{{ }}` sobrando) quebra o envio.
+  Cópia versionada dos modelos (português, visual da loja) e assuntos em
+  `supabase/email-templates/` — editar lá e colar no painel.
 - DNS no Registro.br: o editor não edita registro no lugar — apagar o antigo e criar o
   novo antes de um único "Salvar alterações". Não aceita `@` como nome (usar o domínio
   completo).
