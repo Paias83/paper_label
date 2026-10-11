@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase, type Order, type OrderItem, type Product, type QuoteRequest } from '../../lib/supabase'
+import { supabase, type Order, type OrderItem, type Product, type Profile, type QuoteRequest } from '../../lib/supabase'
 import { callShippingLabel, type LabelLinks } from '../../lib/shippingLabel'
 import ShippingLabelModal, { LabelResult } from './ShippingLabelModal'
 
@@ -25,6 +25,7 @@ export default function Orders() {
   const [items, setItems] = useState<OrderItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [quotes, setQuotes] = useState<QuoteRequest[]>([])
+  const [customers, setCustomers] = useState<Record<string, Pick<Profile, 'name' | 'email'>>>({})
   const [expanded, setExpanded] = useState<string | null>(null)
   const [trackingDrafts, setTrackingDrafts] = useState<Record<string, string>>({})
   const [savingTracking, setSavingTracking] = useState<string | null>(null)
@@ -44,6 +45,13 @@ export default function Orders() {
     ])
     setOrders(ordersRes.data ?? [])
     setItems(itemsRes.data ?? [])
+
+    // Pedidos da loja não têm customer_name (só os manuais): o nome vem do perfil.
+    const userIds = [...new Set((ordersRes.data ?? []).map((o) => o.user_id).filter(Boolean))] as string[]
+    if (userIds.length) {
+      const { data: profiles } = await supabase.from('profiles').select('id, name, email').in('id', userIds)
+      setCustomers(Object.fromEntries((profiles ?? []).map((p) => [p.id, { name: p.name, email: p.email }])))
+    }
     setProducts(productsRes.data ?? [])
     setQuotes(quotesRes.data ?? [])
   }
@@ -131,13 +139,20 @@ export default function Orders() {
   }
   const itemsForOrder = (orderId: string) => items.filter((i) => i.order_id === orderId)
 
+  // Nome digitado no pedido manual tem prioridade; senão, o do cadastro do cliente.
+  function customerLabel(o: Order) {
+    const profile = o.user_id ? customers[o.user_id] : undefined
+    return { name: o.customer_name || profile?.name || profile?.email || '', email: profile?.email ?? '' }
+  }
+
   const filteredOrders = orders.filter((o) => {
     if (!showCancelled && o.status === 'cancelado') return false
     const term = search.trim().toLowerCase()
     if (!term) return true
     return (
       o.id.toLowerCase().includes(term) ||
-      (o.customer_name ?? '').toLowerCase().includes(term) ||
+      customerLabel(o).name.toLowerCase().includes(term) ||
+      customerLabel(o).email.toLowerCase().includes(term) ||
       (o.notes ?? '').toLowerCase().includes(term)
     )
   })
@@ -227,7 +242,10 @@ export default function Orders() {
                       </span>
                     </td>
                     <td>
-                      {o.customer_name || '—'}
+                      {customerLabel(o).name || '—'}
+                      {customerLabel(o).email && customerLabel(o).email !== customerLabel(o).name && (
+                        <div style={{ fontSize: '0.8rem', color: 'var(--charcoal)' }}>{customerLabel(o).email}</div>
+                      )}
                       {o.source === 'manual' && <span className="type-badge manual"> Manual</span>}
                     </td>
                     <td className="price">

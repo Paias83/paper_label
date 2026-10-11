@@ -6,6 +6,8 @@
 //   Usado pelo mp-webhook, pedidos manuais e pelo admin (send-order-status-email).
 // - sendPaymentNoticeEmail: avisos de pagamento que não mudam o status do pedido
 //   (Pix/boleto aguardando, pagamento em análise, cartão recusado). Só o mp-webhook usa.
+// - sendStoreNewOrderEmail: aviso de venda para a loja (contato@) quando um
+//   pagamento é aprovado. Só o mp-webhook usa.
 //
 // Requer o secret RESEND_API_KEY: supabase secrets set RESEND_API_KEY=...
 
@@ -13,6 +15,7 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SITE_URL = 'https://www.studiopaper.com.br'
+const STORE_EMAIL = 'contato@studiopaper.com.br'
 // Duplicado em src/components/DeliveryMethodPicker.tsx — se mudar, alterar nos dois.
 const PICKUP_INFO = 'Rua Pion. Walcyr Bavelone, 362 — das 9h às 17h.'
 
@@ -219,8 +222,16 @@ export function noticeContent(order: OrderForEmail, notice: PaymentNotice, detai
   }
 }
 
+const CUSTOMER_FOOTER = `<a href="${SITE_URL}/meus-pedidos" style="color:${C.wine};">Ver meus pedidos</a><br>
+      Dúvidas? Responda este e-mail ou fale com a gente em contato@studiopaper.com.br`
+
 // Monta o HTML completo — exportado separado para dar para gerar prévia local.
-export function renderEmail(order: OrderForEmail, content: EmailContent, details: EmailDetails) {
+export function renderEmail(
+  order: OrderForEmail,
+  content: EmailContent,
+  details: EmailDetails,
+  footerHtml: string = CUSTOMER_FOOTER
+) {
   const shortId = order.id.slice(0, 8)
   const greeting = details.firstName ? p(`Olá, ${escapeHtml(details.firstName)}!`) : ''
 
@@ -281,8 +292,7 @@ export function renderEmail(order: OrderForEmail, content: EmailContent, details
       ${delivery ? `<p style="margin:20px 0 0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.charcoal};">${delivery}</p>` : ''}
     </td></tr>
     <tr><td style="padding:18px 32px 26px;border-top:1px solid ${C.hairline};font-family:${SANS};font-size:12px;line-height:1.6;color:#8a8a8a;">
-      <a href="${SITE_URL}/meus-pedidos" style="color:${C.wine};">Ver meus pedidos</a><br>
-      Dúvidas? Responda este e-mail ou fale com a gente em contato@studiopaper.com.br
+      ${footerHtml}
     </td></tr>
   </table>
 </td></tr>
@@ -372,4 +382,61 @@ export function sendOrderStatusEmail(admin: SupabaseClient, order: OrderForEmail
 
 export function sendPaymentNoticeEmail(admin: SupabaseClient, order: OrderForEmail, notice: PaymentNotice) {
   return send(admin, order, (details) => noticeContent(order, notice, details))
+}
+
+// Aviso de venda para a loja: quem comprou, itens, total e entrega/retirada.
+// Responder o e-mail vai direto para o cliente (reply_to).
+export async function sendStoreNewOrderEmail(admin: SupabaseClient, order: OrderForEmail) {
+  if (!RESEND_API_KEY) {
+    console.error('RESEND_API_KEY não configurada — aviso de venda não enviado.')
+    return
+  }
+  try {
+    const loaded = order.user_id ? await loadDetails(admin, order) : null
+    const { data: profile } = order.user_id
+      ? await admin.from('profiles').select('name, phone').eq('id', order.user_id).maybeSingle()
+      : { data: null }
+    const shortId = order.id.slice(0, 8)
+    const customerName = profile?.name?.trim() || loaded?.email || 'Cliente sem cadastro'
+    const phone = profile?.phone ? String(profile.phone) : ''
+    const contact = [loaded?.email, phone].filter(Boolean).map((v) => escapeHtml(v!)).join(' · ')
+
+    const content: EmailContent = {
+      subject: `Nova venda — pedido #${shortId} — ${brl(order.total)}`,
+      heading: 'Nova venda paga!',
+      bodyHtml:
+        p(`O pagamento do pedido <strong>#${shortId}</strong> foi aprovado pelo Mercado Pago.`) +
+        p(`<strong>Cliente:</strong> ${escapeHtml(customerName)}${contact ? `<br>${contact}` : ''}`) +
+        p(
+          order.shipping_type === 'retirada'
+            ? 'O cliente vai <strong>retirar no local</strong>.'
+            : 'Depois de separar, gere a etiqueta no painel (pedido → "Gerar etiqueta").'
+        ),
+      cta: { label: 'Abrir pedidos no painel', url: `${SITE_URL}/admin/pedidos` },
+    }
+    const details: EmailDetails = {
+      firstName: null,
+      items: loaded?.details.items ?? [],
+      isQuoteOrder: loaded?.details.isQuoteOrder ?? false,
+    }
+    const footer = `Aviso automático da loja. Responder este e-mail escreve para o cliente.`
+
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `Studio Paper <${STORE_EMAIL}>`,
+        to: STORE_EMAIL,
+        reply_to: loaded?.email || undefined,
+        subject: content.subject,
+        html: renderEmail(order, content, details, footer),
+      }),
+    })
+    if (!res.ok) console.error('Resend recusou o aviso de venda:', await res.text())
+  } catch (err) {
+    console.error('Falha ao enviar aviso de venda:', err)
+  }
 }

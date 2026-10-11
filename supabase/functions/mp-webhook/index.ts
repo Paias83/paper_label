@@ -13,7 +13,12 @@
 
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { sendOrderStatusEmail, sendPaymentNoticeEmail, type PaymentNotice } from '../_shared/orderEmail.ts'
+import {
+  sendOrderStatusEmail,
+  sendPaymentNoticeEmail,
+  sendStoreNewOrderEmail,
+  type PaymentNotice,
+} from '../_shared/orderEmail.ts'
 
 const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -105,7 +110,7 @@ serve(async (req) => {
       if (updated) {
         const { error: fulfillError } = await admin.rpc('fulfill_order', { p_order_id: orderId })
         if (fulfillError) console.error('fulfill_order falhou:', fulfillError)
-        await sendOrderStatusEmail(admin, updated)
+        await Promise.all([sendOrderStatusEmail(admin, updated), sendStoreNewOrderEmail(admin, updated)])
       }
     } else if (['pending', 'in_process', 'authorized', 'rejected'].includes(payment.status)) {
       // Tentativa de pagamento que não fecha o pedido (Pix/boleto gerado, em análise,
