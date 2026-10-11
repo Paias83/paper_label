@@ -241,7 +241,9 @@ logs das Edge Functions no dashboard do Supabase.
   (nova mensagem do admin, proposta enviada, cliente respondeu). Pontos de disparo:
   `QuoteThread.tsx` do admin (`handleSend`) e do cliente (`sendReply`,
   `handlePedirAjuste`). Reusar o padrão de `_shared/orderEmail.ts`.
-- Filtro por categoria fica na Home (`/?categoria=slug`); `/catalogo` só redireciona.
+- Home lista **todos os produtos ativos** abaixo do carrossel (20 por página, `?pagina=`),
+  filtrável por categoria (`/?categoria=slug`); categorias internas ficam de fora.
+  `/catalogo` só redireciona.
 - Instagram ativo na TopBar; TikTok removido até existir conta.
 - O `README.md` está desatualizado (descreve o scaffold inicial).
 
