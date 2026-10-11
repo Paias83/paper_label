@@ -192,7 +192,7 @@ export default function Orders() {
       </div>
 
       <div className="list-card">
-        <table className="admin-table">
+        <table className="admin-table orders-table">
           <thead>
             <tr>
               <th></th>
@@ -241,10 +241,14 @@ export default function Orders() {
                         </a>
                       </span>
                     </td>
-                    <td>
-                      {customerLabel(o).name || '—'}
+                    <td className="customer-cell">
+                      <span className="customer-name" title={customerLabel(o).name}>
+                        {customerLabel(o).name || '—'}
+                      </span>
                       {customerLabel(o).email && customerLabel(o).email !== customerLabel(o).name && (
-                        <div style={{ fontSize: '0.8rem', color: 'var(--charcoal)' }}>{customerLabel(o).email}</div>
+                        <span className="customer-email" title={customerLabel(o).email}>
+                          {customerLabel(o).email}
+                        </span>
                       )}
                       {o.source === 'manual' && <span className="type-badge manual"> Manual</span>}
                     </td>

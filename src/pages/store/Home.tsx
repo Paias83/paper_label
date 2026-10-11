@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ShoppingBag, Wand2 } from 'lucide-react'
 import { supabase, type Category, type Product } from '../../lib/supabase'
@@ -6,14 +6,20 @@ import FeaturedCarousel from '../../components/FeaturedCarousel'
 import CategoryNav from '../../components/CategoryNav'
 import { useCart } from '../../context/CartContext'
 
+const PAGE_SIZE = 20
+
 export default function Home() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const categorySlug = searchParams.get('categoria')
+  const page = Math.max(1, Number(searchParams.get('pagina')) || 1)
   const { addItem } = useCart()
+  const listRef = useRef<HTMLElement>(null)
 
   const [categories, setCategories] = useState<Category[]>([])
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false)
   const [carouselProducts, setCarouselProducts] = useState<Product[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,6 +31,7 @@ export default function Home() {
         .order('name')
       if (error) console.error(error)
       setCategories(data ?? [])
+      setCategoriesLoaded(true)
     }
     loadCategories()
   }, [])
@@ -44,63 +51,63 @@ export default function Home() {
     loadCarousel()
   }, [])
 
+  // Lista da Home: todos os produtos ativos (ou só os da categoria escolhida),
+  // 20 por página. Produtos de categorias internas (active = false) ficam de fora.
   useEffect(() => {
+    if (!categoriesLoaded) return
+    let cancelled = false
+
     async function loadProducts() {
       setLoading(true)
+      let query = supabase
+        .from('products')
+        .select('*', { count: 'exact' })
+        .eq('active', true)
+        .order('created_at', { ascending: false })
+        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
       if (categorySlug) {
         const category = categories.find((c) => c.slug === categorySlug)
         if (!category) {
           setProducts([])
+          setTotalCount(0)
           setLoading(false)
           return
         }
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('active', true)
-          .eq('category_id', category.id)
-          .order('created_at', { ascending: false })
-        if (error) console.error(error)
-        setProducts(data ?? [])
-        setLoading(false)
-        return
+        query = query.eq('category_id', category.id)
+      } else {
+        const visibleIds = categories.map((c) => c.id)
+        query = visibleIds.length
+          ? query.or(`category_id.is.null,category_id.in.(${visibleIds.join(',')})`)
+          : query.is('category_id', null)
       }
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('active', true)
-        .eq('featured', true)
-        .order('created_at', { ascending: false })
-        .limit(4)
-
+      const { data, count, error } = await query
+      if (cancelled) return
       if (error) console.error(error)
-
-      if (data && data.length > 0) {
-        setProducts(data)
-        setLoading(false)
-        return
-      }
-
-      const { data: recent, error: recentError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(4)
-
-      if (recentError) console.error(recentError)
-      setProducts(recent ?? [])
+      setProducts(data ?? [])
+      setTotalCount(count ?? 0)
       setLoading(false)
     }
 
-    if (categorySlug && categories.length === 0) return
     loadProducts()
-  }, [categorySlug, categories])
+    return () => {
+      cancelled = true
+    }
+  }, [categorySlug, categories, categoriesLoaded, page])
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+
+  function goToPage(next: number) {
+    const params = new URLSearchParams(searchParams)
+    if (next <= 1) params.delete('pagina')
+    else params.set('pagina', String(next))
+    setSearchParams(params)
+    listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const activeCategory = categorySlug ? categories.find((c) => c.slug === categorySlug) : null
-  const sectionTitle = activeCategory ? activeCategory.name : 'Em destaque'
+  const sectionTitle = activeCategory ? activeCategory.name : 'Todos os produtos'
 
   function isCustomProduct(p: Product) {
     return categories.find((c) => c.id === p.category_id)?.slug === 'personalizados'
@@ -112,9 +119,14 @@ export default function Home() {
 
       <CategoryNav categories={categories} activeSlug={categorySlug} />
 
-      <section>
+      <section ref={listRef} style={{ scrollMarginTop: 'var(--space-3)' }}>
         <div className="section-heading container">
           <h2>{sectionTitle}</h2>
+          {!loading && totalCount > 0 && (
+            <span className="list-count">
+              {totalCount} {totalCount === 1 ? 'produto' : 'produtos'}
+            </span>
+          )}
         </div>
 
         {loading ? (
@@ -173,6 +185,28 @@ export default function Home() {
               </Link>
             ))}
           </div>
+        )}
+
+        {!loading && totalPages > 1 && (
+          <nav className="pagination container" aria-label="Páginas">
+            <button type="button" onClick={() => goToPage(page - 1)} disabled={page <= 1}>
+              ← Anterior
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={n === page ? 'active' : ''}
+                aria-current={n === page ? 'page' : undefined}
+                onClick={() => goToPage(n)}
+              >
+                {n}
+              </button>
+            ))}
+            <button type="button" onClick={() => goToPage(page + 1)} disabled={page >= totalPages}>
+              Próxima →
+            </button>
+          </nav>
         )}
       </section>
 

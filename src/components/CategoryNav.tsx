@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Cake, Candy, PartyPopper, Sparkles, Star, Tag, Wand2, type LucideIcon } from 'lucide-react'
+import { Cake, Candy, LayoutGrid, PartyPopper, Sparkles, Tag, Wand2, type LucideIcon } from 'lucide-react'
 import type { Category } from '../lib/supabase'
 
 type CategoryNavProps = {
@@ -23,8 +23,8 @@ export default function CategoryNav({ categories, activeSlug }: CategoryNavProps
   return (
     <nav className="category-nav" aria-label="Categorias">
       <Link to="/" className={`category-pill${activeSlug ? '' : ' active'}`}>
-        <Star size={14} />
-        Em destaque
+        <LayoutGrid size={14} />
+        Todos
       </Link>
       {categories.map((c) => {
         const Icon = getCategoryIcon(c.slug)
