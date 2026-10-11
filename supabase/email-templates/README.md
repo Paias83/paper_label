@@ -8,10 +8,11 @@ depois de colados lá**: Authentication → Email Templates
 |---|---|---|---|
 | Confirm signup | `confirm-signup.html` | `Confirme seu e-mail — Studio Paper` | e-mail novo em `/entrar` (`signUp`) |
 | Magic Link | `magic-link.html` | `Continue seu cadastro na Studio Paper` | conta confirmada sem cadastro completo (`signInWithOtp`) |
+| Reset Password | `reset-password.html` | `Crie uma nova senha — Studio Paper` | "Esqueci minha senha" no login (`resetPasswordForEmail`) → `/redefinir-senha?token_hash=…&type=recovery` |
 
 Os links usam `?token_hash={{ .TokenHash }}&type=email` → `/completar-cadastro`, que
 confirma com `verifyOtp` (funciona em qualquer navegador; ver CLAUDE.md). Ao editar,
 trocar o link inteiro — sobrar `{{ ` / ` }}` quebra o modelo.
 
-Os demais modelos (Change Email, Invite, Reset Password, Reauthentication) não são
+Os demais modelos (Change Email, Invite, Reauthentication) não são
 disparados pelo site hoje.

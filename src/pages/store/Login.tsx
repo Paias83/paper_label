@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 
-type Step = 'email' | 'senha' | 'aguardando'
+type Step = 'email' | 'senha' | 'aguardando' | 'recuperacao'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function Login() {
   const navigate = useNavigate()
-  const location = useLocation() as { state?: { justRegistered?: boolean; email?: string } }
+  const location = useLocation() as {
+    state?: { justRegistered?: boolean; passwordReset?: boolean; email?: string }
+  }
 
   const [step, setStep] = useState<Step>('email')
   const [email, setEmail] = useState('')
@@ -24,6 +26,10 @@ export default function Login() {
       setEmail(location.state.email)
       setStep('senha')
       setInfo('Cadastro concluído! Entre com a senha que você acabou de criar.')
+    } else if (location.state?.passwordReset && location.state.email) {
+      setEmail(location.state.email)
+      setStep('senha')
+      setInfo('Senha alterada! Entre com a nova senha.')
     }
   }, [location.state])
 
@@ -119,6 +125,27 @@ export default function Login() {
     navigate('/')
   }
 
+  // Esqueci minha senha: o e-mail (modelo "Reset Password") leva para
+  // /redefinir-senha?token_hash=...&type=recovery — ver ResetPassword.tsx.
+  async function sendPasswordReset() {
+    if (cooldown > 0) return
+    setMessage('')
+    setInfo('')
+    setLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    setLoading(false)
+    if (error) {
+      setMessage(
+        error.status === 429
+          ? 'Muitas tentativas. Aguarde um minuto e tente de novo.'
+          : 'Não foi possível enviar o e-mail. Tente novamente.'
+      )
+      return
+    }
+    setStep('recuperacao')
+    setCooldown(60)
+  }
+
   function backToEmail() {
     setStep('email')
     setPassword('')
@@ -184,12 +211,47 @@ export default function Login() {
               </button>
               <button
                 type="button"
+                onClick={sendPasswordReset}
+                disabled={loading}
+                style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer' }}
+              >
+                Esqueci minha senha
+              </button>
+              <button
+                type="button"
                 onClick={backToEmail}
                 style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer' }}
               >
                 Usar outro e-mail
               </button>
             </form>
+          )}
+
+          {step === 'recuperacao' && (
+            <div style={{ display: 'grid', gap: 12 }}>
+              <p>
+                Enviamos um link para criar uma nova senha para <strong>{email}</strong>. Confira também a caixa de
+                spam.
+              </p>
+              <button
+                className="seal-button"
+                type="button"
+                onClick={sendPasswordReset}
+                disabled={loading || cooldown > 0}
+              >
+                {cooldown > 0 ? `Reenviar e-mail (${cooldown}s)` : 'Reenviar e-mail'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('senha')
+                  setMessage('')
+                }}
+                style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer' }}
+              >
+                Voltar para o login
+              </button>
+            </div>
           )}
 
           {step === 'aguardando' && (

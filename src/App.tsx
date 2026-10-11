@@ -9,6 +9,7 @@ import ProductPage from './pages/store/ProductPage'
 import Cart from './pages/store/Cart'
 import Login from './pages/store/Login'
 import CompleteRegistration from './pages/store/CompleteRegistration'
+import ResetPassword from './pages/store/ResetPassword'
 import QuoteRequestForm from './pages/store/QuoteRequestForm'
 import MyQuotes from './pages/store/MyQuotes'
 import MyOrders from './pages/store/MyOrders'
@@ -44,6 +45,7 @@ export default function App() {
               <Route path="/carrinho" element={<Cart />} />
               <Route path="/entrar" element={<Login />} />
               <Route path="/completar-cadastro" element={<CompleteRegistration />} />
+              <Route path="/redefinir-senha" element={<ResetPassword />} />
               <Route path="/personalizados/novo" element={<QuoteRequestForm />} />
               <Route path="/meus-orcamentos" element={<MyQuotes />} />
               <Route path="/meus-pedidos" element={<MyOrders />} />
