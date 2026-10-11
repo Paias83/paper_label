@@ -146,6 +146,7 @@ serve(async (req) => {
           : []),
       ],
       external_reference: order.id,
+      statement_descriptor: 'STUDIOPAPER',
       notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,
       back_urls: {
         success: `${req.headers.get('origin')}/checkout/sucesso`,

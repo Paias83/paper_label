@@ -4,6 +4,8 @@ import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 import { supabase, type ShippingAddress } from '../../lib/supabase'
 import AddressForm, { isAddressComplete } from '../../components/AddressForm'
+import EmbeddedPayment, { MP_PUBLIC_KEY } from '../../components/EmbeddedPayment'
+import { callProcessPayment } from '../../lib/payment'
 import DeliveryMethodPicker, { PICKUP_INFO, type DeliveryMethod } from '../../components/DeliveryMethodPicker'
 
 type ShippingOption = {
@@ -33,7 +35,7 @@ const PICKUP_OPTION: ShippingOption = {
 }
 
 export default function Cart() {
-  const { items, setQuantity, removeItem, total } = useCart()
+  const { items, setQuantity, removeItem, clear, total } = useCart()
   const { user, loading: authLoading } = useAuth()
 
   const [paying, setPaying] = useState(false)
@@ -46,12 +48,25 @@ export default function Cart() {
   const [addressFromProfile, setAddressFromProfile] = useState(false)
   // Descarta respostas de cotações antigas (CEP/quantidade mudou no meio do caminho).
   const quoteRequestId = useRef(0)
+  // Pedido criado para o pagamento embutido. Vale só para o carrinho do jeito
+  // que estava (checkoutKey): mudou produto, frete ou endereço, gera outro.
+  const [checkout, setCheckout] = useState<{ orderId: string; total: number; payerEmail: string; key: string } | null>(
+    null
+  )
+  const [paidOrderId, setPaidOrderId] = useState<string | null>(null)
 
   const selectedShipping =
     deliveryMethod === 'retirada' ? PICKUP_OPTION : shippingOptions.find((o) => o.id === selectedShippingId) ?? null
   const grandTotal = total + (selectedShipping?.price ?? 0)
   const canPay =
     deliveryMethod === 'retirada' ? true : isAddressComplete(address) && Boolean(selectedShipping)
+  const checkoutKey = JSON.stringify([
+    items.map((i) => [i.product.id, i.quantity]),
+    deliveryMethod,
+    deliveryMethod === 'entrega' ? address : null,
+    selectedShipping?.id ?? null,
+  ])
+  const activeCheckout = checkout && checkout.key === checkoutKey ? checkout : null
 
   // Pré-preenche com o endereço do cadastro (o cliente pode alterar à vontade).
   useEffect(() => {
@@ -126,37 +141,56 @@ export default function Cart() {
     }
   }
 
+  function orderBody() {
+    return {
+      items: items.map((i) => ({ id: i.product.id, quantity: i.quantity })),
+      shipping: { type: deliveryMethod, service_id: selectedShipping?.id },
+      address: deliveryMethod === 'entrega' ? address : null,
+    }
+  }
+
+  // Guarda o endereço no perfil pra pré-preencher da próxima compra —
+  // best-effort, não bloqueia o checkout se falhar.
+  function rememberAddress() {
+    if (user && deliveryMethod === 'entrega') {
+      supabase.from('profiles').update({ addresses: [address] }).eq('id', user.id)
+    }
+  }
+
+  // Pagamento embutido: cria o pedido (preço e frete calculados no servidor)
+  // e abre o formulário do Mercado Pago logo abaixo do resumo.
+  async function handleGoToPayment() {
+    if (!canPay || !selectedShipping) return
+    setPaying(true)
+    try {
+      const data = await callProcessPayment<{ order_id: string; total: number; payer_email: string }>(
+        'create_order',
+        orderBody()
+      )
+      rememberAddress()
+      setCheckout({ orderId: data.order_id, total: data.total, payerEmail: data.payer_email, key: checkoutKey })
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  function handlePaymentApproved() {
+    if (!activeCheckout) return
+    setPaidOrderId(activeCheckout.orderId)
+    setCheckout(null)
+    clear()
+  }
+
+  // Plano B (sem VITE_MP_PUBLIC_KEY): Checkout Pro, redireciona para o Mercado Pago.
   async function handlePagar() {
     if (!canPay || !selectedShipping) return
     setPaying(true)
     try {
-      // Chama a Edge Function que cria a preferência no Mercado Pago
-      // e devolve o init_point (URL de pagamento) — ver supabase/functions/create-preference
-      const { data, error } = await supabase.functions.invoke('create-preference', {
-        body: {
-          items: items.map((i) => ({
-            id: i.product.id,
-            title: i.product.name,
-            quantity: i.quantity,
-            unit_price: i.product.price,
-          })),
-          shipping: {
-            type: deliveryMethod,
-            service_id: selectedShipping.id,
-            service_name: selectedShipping.name,
-            price: selectedShipping.price,
-          },
-          address: deliveryMethod === 'entrega' ? address : null,
-        },
-      })
+      const { data, error } = await supabase.functions.invoke('create-preference', { body: orderBody() })
       if (error) throw error
-
-      // Guarda o endereço no perfil pra pré-preencher da próxima compra —
-      // best-effort, não bloqueia o checkout se falhar.
-      if (user && deliveryMethod === 'entrega') {
-        supabase.from('profiles').update({ addresses: [address] }).eq('id', user.id)
-      }
-
+      rememberAddress()
       window.location.href = data.init_point
     } catch (err) {
       console.error(err)
@@ -173,6 +207,23 @@ export default function Cart() {
     } finally {
       setPaying(false)
     }
+  }
+
+  if (paidOrderId) {
+    return (
+      <div className="container" style={{ padding: '40px 24px', maxWidth: 640 }}>
+        <div className="form-card">
+          <h2>Pagamento confirmado!</h2>
+          <p>
+            Recebemos o pagamento do pedido <strong>#{paidOrderId.slice(0, 8)}</strong>. Você vai receber a
+            confirmação por e-mail e pode acompanhar tudo em "Meus pedidos".
+          </p>
+          <Link to="/meus-pedidos" className="seal-button">
+            Ver meus pedidos
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   if (items.length === 0) {
@@ -290,14 +341,40 @@ export default function Cart() {
                   {grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </strong>
               </div>
-              <button
-                className="seal-button"
-                onClick={handlePagar}
-                disabled={paying || authLoading || !canPay || !selectedShipping}
-              >
-                {paying ? 'Redirecionando…' : 'Pagar com Mercado Pago'}
-              </button>
+              {MP_PUBLIC_KEY ? (
+                !activeCheckout && (
+                  <button
+                    className="seal-button"
+                    onClick={handleGoToPayment}
+                    disabled={paying || authLoading || !canPay || !selectedShipping}
+                  >
+                    {paying ? 'Preparando pagamento…' : 'Ir para o pagamento'}
+                  </button>
+                )
+              ) : (
+                <button
+                  className="seal-button"
+                  onClick={handlePagar}
+                  disabled={paying || authLoading || !canPay || !selectedShipping}
+                >
+                  {paying ? 'Redirecionando…' : 'Pagar com Mercado Pago'}
+                </button>
+              )}
             </div>
+            {activeCheckout && (
+              <>
+                <p className="checkout-hint" style={{ marginTop: 'var(--space-3)' }}>
+                  Pagamento processado com segurança pelo Mercado Pago — os dados do cartão não passam pela loja.
+                </p>
+                <EmbeddedPayment
+                  key={activeCheckout.orderId}
+                  orderId={activeCheckout.orderId}
+                  amount={activeCheckout.total}
+                  payerEmail={activeCheckout.payerEmail}
+                  onApproved={handlePaymentApproved}
+                />
+              </>
+            )}
           </div>
         )}
       </div>

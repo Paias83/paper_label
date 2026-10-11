@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mercadopago/sdk-react": "^1.0.7",
     "@supabase/supabase-js": "^2.45.0",
     "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.27.0",
