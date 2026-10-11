@@ -72,12 +72,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (next === owner) return
 
     let loaded = readCart(storageKey(next))
-    if (owner === undefined) {
-      // Primeiro carregamento: o carrinho da chave antiga (única) vai para quem está logado.
+    if (next) {
+      // Carrinho da chave antiga (única, de antes do carrinho por conta): vai só
+      // para uma conta logada — visitante nunca herda itens de outra pessoa.
       const legacy = readCart(LEGACY_KEY)
       if (legacy.length) loaded = mergeCarts(loaded, legacy)
       removeCart(LEGACY_KEY)
-    } else if (owner === null && next) {
+    }
+    if (owner === null && next) {
       // Visitante entrou ou se cadastrou: leva o que escolheu para a conta.
       loaded = mergeCarts(loaded, readCart(storageKey(null)))
       removeCart(storageKey(null))
