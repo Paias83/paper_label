@@ -197,6 +197,18 @@ logs das Edge Functions no dashboard do Supabase.
   novo antes de um único "Salvar alterações". Não aceita `@` como nome (usar o domínio
   completo).
 
+## LGPD e páginas legais
+
+- `/privacidade` (`PrivacyPolicy.tsx`) e `/termos` (`Terms.tsx`) são textos-modelo
+  (recomendada revisão jurídica, sobretudo arrependimento de personalizados). Ao mudar,
+  atualizar `LEGAL_UPDATED_AT`.
+- Identificação da loja (Decreto 7.962/2013) centralizada em `src/lib/storeInfo.ts`
+  (rodapé + páginas legais). `STORE_INFO.document` = CNPJ, **nulo até o MEI sair**.
+- Cadastro exige aceite dos termos/política → `profiles.terms_accepted_at`.
+- Lista de compartilhamento de dados na política (Mercado Pago, Melhor Envio, Supabase,
+  Vercel, Resend, Zoho, ViaCEP, Google Fonts): **se adicionar um serviço que recebe dado
+  pessoal, atualizar a política**.
+
 ## Convenções e decisões
 
 - Público-alvo do admin é leigo: formulários usam `advanceOnEnter` (`lib/formNav.ts`)
@@ -246,6 +258,11 @@ logs das Edge Functions no dashboard do Supabase.
   `/catalogo` só redireciona.
 - Instagram ativo na TopBar; TikTok removido até existir conta.
 - O `README.md` está desatualizado (descreve o scaffold inicial).
+- **LGPD pendente**: (1) anexos de orçamento no bucket **público** `quote-attachments`
+  (mensagens guardam URL pública e o path não tem id do orçamento) → tornar privado com
+  URL assinada + policy por participante; (2) CNPJ no `storeInfo.ts`; (3) botão
+  "Excluir minha conta" (anonimizar perfil, manter pedidos); (4) opcional: fontes
+  locais em vez do Google Fonts.
 
 ## Notas no Obsidian
 
