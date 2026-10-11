@@ -153,8 +153,9 @@ logs das Edge Functions no dashboard do Supabase.
 - **Categorias**: `categories.active = false` = categoria **interna** (não aparece na
   loja, mas continua disponível no ProductForm/pedido manual). Categoria
   `personalizados` troca "Adicionar ao carrinho" por "Solicitar orçamento".
-- **Orçamento** (`quote_requests` + `quote_messages`, anexos no bucket público
-  `quote-attachments`): conversa cliente/admin com proposta de preço e frete; aprovado
+- **Orçamento** (`quote_requests` + `quote_messages`, anexos no bucket **privado**
+  `quote-attachments`, pasta `<user_id do cliente>/`, link assinado via
+  `lib/quoteAttachments.ts` + `AttachmentImage`; ver `fix-quote-attachments-private.sql`): conversa cliente/admin com proposta de preço e frete; aprovado
   vira pedido via `create-quote-order`.
 - **Cadastro em duas etapas**: `/entrar` pede só o e-mail → `email_status()` decide
   login ou envio de confirmação → `/completar-cadastro` (nome, CPF validado em
@@ -258,11 +259,8 @@ logs das Edge Functions no dashboard do Supabase.
   `/catalogo` só redireciona.
 - Instagram ativo na TopBar; TikTok removido até existir conta.
 - O `README.md` está desatualizado (descreve o scaffold inicial).
-- **LGPD pendente**: (1) anexos de orçamento no bucket **público** `quote-attachments`
-  (mensagens guardam URL pública e o path não tem id do orçamento) → tornar privado com
-  URL assinada + policy por participante; (2) CNPJ no `storeInfo.ts`; (3) botão
-  "Excluir minha conta" (anonimizar perfil, manter pedidos); (4) opcional: fontes
-  locais em vez do Google Fonts.
+- **LGPD pendente**: (1) CNPJ no `storeInfo.ts`; (2) botão "Excluir minha conta"
+  (anonimizar perfil, manter pedidos); (3) opcional: fontes locais em vez do Google Fonts.
 
 ## Notas no Obsidian
 
