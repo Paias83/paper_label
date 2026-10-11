@@ -4,6 +4,8 @@ import { supabase, type QuoteMessage, type QuoteRequest, type QuoteStatus } from
 import { useAuth } from '../../context/AuthContext'
 import { QUOTE_STATUS_LABEL } from '../../lib/quoteStatus'
 import CurrencyInput from '../../components/CurrencyInput'
+import AttachmentImage from '../../components/AttachmentImage'
+import { uploadQuoteAttachment } from '../../lib/quoteAttachments'
 
 const STATUS_OPTIONS: QuoteStatus[] = [
   'solicitado',
@@ -46,15 +48,14 @@ export default function QuoteThread() {
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !quote) return
     setUploading(true)
-    const path = `${Date.now()}-${file.name}`
-    const { error } = await supabase.storage.from('quote-attachments').upload(path, file)
-    if (error) {
+    try {
+      // Salva na pasta do cliente do orçamento (bucket privado — ver lib/quoteAttachments.ts).
+      const path = await uploadQuoteAttachment(file, quote.user_id)
+      setReplyImages((prev) => [...prev, path])
+    } catch {
       alert('Falha ao enviar a imagem.')
-    } else {
-      const { data } = supabase.storage.from('quote-attachments').getPublicUrl(path)
-      setReplyImages((prev) => [...prev, data.publicUrl])
     }
     setUploading(false)
     e.target.value = ''
@@ -140,7 +141,7 @@ export default function QuoteThread() {
             {m.images.length > 0 && (
               <div className="quote-bubble-images">
                 {m.images.map((url) => (
-                  <img key={url} src={url} alt="" />
+                  <AttachmentImage key={url} value={url} />
                 ))}
               </div>
             )}
@@ -172,7 +173,7 @@ export default function QuoteThread() {
           <div className="image-grid">
             {replyImages.map((url) => (
               <div key={url} className="image-thumb">
-                <img src={url} alt="" />
+                <AttachmentImage value={url} />
                 <button
                   type="button"
                   onClick={() => setReplyImages((prev) => prev.filter((i) => i !== url))}
