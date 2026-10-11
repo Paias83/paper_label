@@ -190,6 +190,9 @@ logs das Edge Functions no dashboard do Supabase.
   `{{ }}` sobrando) quebra o envio.
   Cópia versionada dos modelos (português, visual da loja) e assuntos em
   `supabase/email-templates/` — editar lá e colar no painel.
+- **Esqueci minha senha**: link no passo de senha do `/entrar` → `resetPasswordForEmail`
+  → modelo **Reset Password** aponta para `/redefinir-senha?token_hash=…&type=recovery`
+  (`ResetPassword.tsx`, `verifyOtp` type `recovery`) → salva, desloga e volta ao login.
 - DNS no Registro.br: o editor não edita registro no lugar — apagar o antigo e criar o
   novo antes de um único "Salvar alterações". Não aceita `@` como nome (usar o domínio
   completo).
