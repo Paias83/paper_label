@@ -80,7 +80,7 @@ quando há CEP completo (recalcula com CEP/quantidades). O carrinho em si fica n
 | `shipping-label` | admin-only; etiquetas do Melhor Envio: `preview` / `buy` (carrinho → compra com saldo da carteira → gera) / `print` (etiqueta + DACE) / `cancel` | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
 | `create-manual-order` / `update-manual-order` | pedido manual do admin (checam `role='admin'` pelo JWT) | — |
 | `send-order-status-email` | admin-only; chamada por `Orders.tsx` ao mudar status | `RESEND_API_KEY` |
-| `_shared/orderEmail.ts` | `sendOrderStatusEmail` (por status) e `sendPaymentNoticeEmail` (Pix/boleto, análise, recusa) via API HTTP do Resend; HTML com itens/total no visual da loja | |
+| `_shared/orderEmail.ts` | `sendOrderStatusEmail` (por status), `sendPaymentNoticeEmail` (Pix/boleto, análise, recusa) e `sendStoreNewOrderEmail` (aviso de venda para `contato@`, ao aprovar) via API HTTP do Resend; HTML com itens/total no visual da loja | |
 
 Todas também usam `SUPABASE_URL`, `SUPABASE_ANON_KEY` e/ou `SUPABASE_SERVICE_ROLE_KEY`.
 O CLI já está linkado ao projeto. Deploy:
