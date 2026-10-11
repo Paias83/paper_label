@@ -35,6 +35,7 @@ export default function CompleteRegistration() {
   const [address, setAddress] = useState<ShippingAddress>(emptyAddress)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -110,6 +111,10 @@ export default function CompleteRegistration() {
       setMessage('As senhas não conferem.')
       return
     }
+    if (!acceptedTerms) {
+      setMessage('Para concluir, aceite os Termos de Uso e a Política de Privacidade.')
+      return
+    }
 
     setSaving(true)
 
@@ -128,6 +133,7 @@ export default function CompleteRegistration() {
         phone: phone.replace(/\D/g, ''),
         addresses: [address],
         registration_completed: true,
+        terms_accepted_at: new Date().toISOString(),
       })
       .eq('id', user!.id)
 
@@ -269,6 +275,21 @@ export default function CompleteRegistration() {
             </div>
           </div>
         </div>
+
+        <label className="terms-accept">
+          <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />
+          <span>
+            Li e aceito os{' '}
+            <Link to="/termos" target="_blank" rel="noreferrer">
+              Termos de Uso e Compra
+            </Link>{' '}
+            e a{' '}
+            <Link to="/privacidade" target="_blank" rel="noreferrer">
+              Política de Privacidade
+            </Link>
+            .
+          </span>
+        </label>
 
         {message && <p className="checkout-error">{message}</p>}
 

@@ -518,6 +518,68 @@ a { color: inherit; }
   padding-bottom: var(--space-2);
 }
 
+/* Páginas legais (Política de Privacidade, Termos) */
+.legal-page {
+  max-width: 760px;
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-5);
+}
+
+.legal-page h1 {
+  margin-bottom: var(--space-1);
+}
+
+.legal-page h2 {
+  font-size: 1.15rem;
+  margin: var(--space-4) 0 var(--space-1);
+}
+
+.legal-page p,
+.legal-page li {
+  line-height: 1.7;
+  color: var(--charcoal);
+}
+
+.legal-page ul {
+  padding-left: 20px;
+}
+
+.legal-page a {
+  color: var(--wine);
+}
+
+.legal-updated {
+  font-size: 0.85rem;
+}
+
+/* Identificação da loja no rodapé (Decreto 7.962/2013) */
+.footer-legal {
+  font-size: 0.8rem;
+  color: var(--charcoal);
+  padding-top: var(--space-2);
+}
+
+/* Aceite dos termos no cadastro */
+.terms-accept {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.terms-accept input {
+  accent-color: var(--wine);
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.terms-accept a {
+  color: var(--wine);
+}
+
 /* Paginação da lista de produtos da Home */
 .pagination {
   display: flex;
@@ -1031,7 +1093,7 @@ a { color: inherit; }
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr;
   gap: var(--space-4);
 }
 

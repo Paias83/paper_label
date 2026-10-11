@@ -10,6 +10,8 @@ import Cart from './pages/store/Cart'
 import Login from './pages/store/Login'
 import CompleteRegistration from './pages/store/CompleteRegistration'
 import ResetPassword from './pages/store/ResetPassword'
+import PrivacyPolicy from './pages/store/PrivacyPolicy'
+import Terms from './pages/store/Terms'
 import QuoteRequestForm from './pages/store/QuoteRequestForm'
 import MyQuotes from './pages/store/MyQuotes'
 import MyOrders from './pages/store/MyOrders'
@@ -46,6 +48,8 @@ export default function App() {
               <Route path="/entrar" element={<Login />} />
               <Route path="/completar-cadastro" element={<CompleteRegistration />} />
               <Route path="/redefinir-senha" element={<ResetPassword />} />
+              <Route path="/privacidade" element={<PrivacyPolicy />} />
+              <Route path="/termos" element={<Terms />} />
               <Route path="/personalizados/novo" element={<QuoteRequestForm />} />
               <Route path="/meus-orcamentos" element={<MyQuotes />} />
               <Route path="/meus-pedidos" element={<MyOrders />} />

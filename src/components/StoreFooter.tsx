@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { STORE_ADDRESS, STORE_INFO } from '../lib/storeInfo'
 
 export default function StoreFooter() {
   return (
@@ -36,6 +37,22 @@ export default function StoreFooter() {
             <li style={{ color: 'var(--charcoal)' }}>Seg. a sex., 9h às 18h</li>
           </ul>
         </div>
+        <div>
+          <h4>Institucional</h4>
+          <ul>
+            <li>
+              <Link to="/termos">Termos de uso e compra</Link>
+            </li>
+            <li>
+              <Link to="/privacidade">Política de privacidade</Link>
+            </li>
+          </ul>
+        </div>
+      </div>
+      {/* Identificação exigida pelo Decreto 7.962/2013 (dados em lib/storeInfo.ts). */}
+      <div className="container footer-legal">
+        {STORE_INFO.legalName ?? STORE_INFO.name}
+        {STORE_INFO.document ? ` · CNPJ ${STORE_INFO.document}` : ''} · {STORE_ADDRESS} · {STORE_INFO.email}
       </div>
       <div className="container footer-bottom">
         <span>© {new Date().getFullYear()} Studio Paper</span>

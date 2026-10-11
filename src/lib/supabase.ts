@@ -48,6 +48,7 @@ export type Profile = {
   role: 'cliente' | 'admin'
   addresses: ShippingAddress[]
   registration_completed: boolean
+  terms_accepted_at: string | null
   created_at: string
 }
 
