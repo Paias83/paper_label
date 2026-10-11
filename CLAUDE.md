@@ -57,7 +57,12 @@ supabase/
 **Não existe página de checkout separada**: endereço, frete, totais e botão de pagar
 ficam dentro de `src/pages/store/Cart.tsx` (`/carrinho`). O antigo `Checkout.tsx` foi
 removido.
-O carrinho pré-preenche o endereço de `profiles.addresses[0]` e cota o frete sozinho
+O pagamento é **embutido** (`components/EmbeddedPayment.tsx`, `@mercadopago/sdk-react`):
+"Ir para o pagamento" cria o pedido via `process-payment` e abre cartão/débito/Pix/boleto
+na página; o Status Screen mostra QR/boleto e a página consulta o pedido a cada 5 s até
+o `mp-webhook` marcar pago. Public Key de produção fica no próprio componente (é
+pública; `VITE_MP_PUBLIC_KEY` sobrescreve). Fatura do cartão: `statement_descriptor`
+`STUDIOPAPER`. O carrinho pré-preenche o endereço de `profiles.addresses[0]` e cota o frete sozinho
 quando há CEP completo (recalcula com CEP/quantidades). O carrinho em si fica no
 `localStorage` **por conta** (`papelaria_carrinho:<user_id|visitante>`, ver
 `CartContext.tsx`); o de visitante é mesclado na conta ao entrar.
@@ -66,7 +71,9 @@ quando há CEP completo (recalcula com CEP/quantidades). O carrinho em si fica n
 
 | Função | O que faz | Secrets |
 |---|---|---|
-| `create-preference` | cria pedido `pendente` + preferência no Mercado Pago (Checkout Pro). **Preço/nome dos produtos vêm do banco e o frete é recotado pelo `service_id`** — do body só usa ids, quantidades, serviço e endereço | `MP_ACCESS_TOKEN`, `MELHOR_ENVIO_TOKEN` |
+| `process-payment` | **pagamento embutido no carrinho** (Payment Brick): `create_order` grava o pedido `pendente` e `pay` cria o pagamento na Payments API com o total **do banco** | `MP_ACCESS_TOKEN`, `MELHOR_ENVIO_TOKEN` |
+| `_shared/checkoutOrder.ts` | criação do pedido da loja: **preço/nome dos produtos vêm do banco e o frete é recotado pelo `service_id`** — do body só usa ids, quantidades, serviço e endereço | |
+| `create-preference` | legado/plano B: Checkout Pro (redireciona), usado só se não houver Public Key | `MP_ACCESS_TOKEN`, `MELHOR_ENVIO_TOKEN` |
 | `create-quote-order` | igual à anterior, mas a partir de orçamento aprovado | `MP_ACCESS_TOKEN` |
 | `mp-webhook` | notificação do MP → aprovado (valor ≥ total do pedido): `pago` + `fulfill_order`; Pix/boleto/análise/recusado: só e-mail (pedido segue `pendente`); `cancelled` (Pix/boleto vencido): cancela | `MP_ACCESS_TOKEN` |
 | `calculate-shipping` | cotação no Melhor Envio (lógica em `_shared/melhorEnvio.ts`, peso/medidas lidos do banco) | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
@@ -219,13 +226,12 @@ logs das Edge Functions no dashboard do Supabase.
 
 ## Pendências e próximos passos
 
-- **Páginas de retorno do pagamento**: `create-preference` manda o Mercado Pago
-  voltar para `/checkout/sucesso`, `/checkout/falha` e `/checkout/pendente`, mas
-  essas rotas não existem em `App.tsx`.
-- **Checkout Bricks (planejado)**: trocar o redirecionamento do Checkout Pro pelo
-  formulário de pagamento embutido no `Cart.tsx` (cartão/Pix/boleto sem sair do site).
-  Exige SDK do Bricks no front e criar o pagamento pela Payments API; resolveria
-  também as páginas de retorno. Conferir se o `mp-webhook` continua funcionando.
+- **Pagamento de orçamento** (`create-quote-order`) ainda usa Checkout Pro
+  (redireciona); dá para reaproveitar `EmbeddedPayment.tsx`. As rotas
+  `/checkout/sucesso|falha|pendente` das `back_urls` continuam sem página.
+- **Payments API é "legado"** no Mercado Pago (nova: Orders API, `/v1/orders`). O
+  embutido usa a Payments API porque é a da doc do Brick e a que o `mp-webhook` lê;
+  migrar exige reescrever o webhook.
 - **E-mails de orçamento (planejado)**: avisos por e-mail nas etapas do orçamento
   (nova mensagem do admin, proposta enviada, cliente respondeu). Pontos de disparo:
   `QuoteThread.tsx` do admin (`handleSend`) e do cliente (`sendReply`,
