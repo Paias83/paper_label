@@ -90,6 +90,18 @@ serve(async (req) => {
       addresses: address ? [address] : [],
     }
 
+    // profiles_cpf_unique: checa antes, para dar uma mensagem clara (e, no
+    // cadastro novo, não criar a conta para depois falhar no perfil).
+    if (profileData.cpf) {
+      let cpfQuery = admin.from('profiles').select('name, email').eq('cpf', profileData.cpf)
+      if (id) cpfQuery = cpfQuery.neq('id', id)
+      const { data: sameCpf } = await cpfQuery.limit(1).maybeSingle()
+      if (sameCpf) {
+        const owner = sameCpf.name || sameCpf.email || 'outro cliente'
+        return jsonResponse({ error: `Este CPF já está no cadastro de ${owner}.` }, 409)
+      }
+    }
+
     if (id) {
       const { error } = await admin.from('profiles').update(profileData).eq('id', id).eq('role', 'cliente')
       if (error) throw error
@@ -117,7 +129,11 @@ serve(async (req) => {
       .from('profiles')
       .update({ ...profileData, created_by_admin: true, registration_completed: false })
       .eq('id', created.user.id)
-    if (profileError) throw profileError
+    if (profileError) {
+      // Desfaz a conta para não sobrar cadastro pela metade (o perfil sai em cascata).
+      await admin.auth.admin.deleteUser(created.user.id)
+      throw profileError
+    }
 
     return jsonResponse({ id: created.user.id })
   } catch (err) {

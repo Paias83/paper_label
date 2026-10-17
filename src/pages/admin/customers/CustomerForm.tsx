@@ -89,7 +89,15 @@ export default function CustomerForm() {
     setSaving(false)
 
     if (fnError || data?.error) {
-      setError(data?.error ?? 'Não foi possível salvar o cliente.')
+      // Em resposta 4xx/5xx o supabase-js descarta o corpo: a mensagem vem de error.context.
+      let message = data?.error ?? 'Não foi possível salvar o cliente.'
+      try {
+        const body = await (fnError as { context?: Response } | null)?.context?.json()
+        if (body?.error) message = body.error
+      } catch {
+        // corpo não era JSON — fica a mensagem genérica
+      }
+      setError(message)
       return
     }
     navigate('/admin/clientes')
