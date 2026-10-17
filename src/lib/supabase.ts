@@ -49,6 +49,7 @@ export type Profile = {
   addresses: ShippingAddress[]
   registration_completed: boolean
   terms_accepted_at: string | null
+  created_by_admin: boolean
   created_at: string
 }
 

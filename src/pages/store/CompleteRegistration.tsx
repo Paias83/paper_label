@@ -4,6 +4,7 @@ import type { EmailOtpType, User } from '@supabase/supabase-js'
 import { supabase, type ShippingAddress } from '../../lib/supabase'
 import AddressForm, { isAddressComplete } from '../../components/AddressForm'
 import { formatCPF, isValidCPF } from '../../lib/cpf'
+import { formatPhone } from '../../lib/phone'
 
 type Status = 'loading' | 'ready' | 'no-session' | 'link-failed' | 'already-complete'
 
@@ -15,13 +16,6 @@ const emptyAddress: ShippingAddress = {
   neighborhood: '',
   city: '',
   state: '',
-}
-
-function formatPhone(raw: string) {
-  const digits = raw.replace(/\D/g, '').slice(0, 11)
-  return digits
-    .replace(/(\d{2})(\d)/, '($1) $2')
-    .replace(/(\d{5})(\d{1,4})$/, '$1-$2')
 }
 
 export default function CompleteRegistration() {
@@ -75,9 +69,17 @@ export default function CompleteRegistration() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('registration_completed')
+        .select('registration_completed, name, cpf, phone, addresses')
         .eq('id', sessionUser.id)
         .single()
+      // Cliente cadastrado pelo admin (save-customer) já tem dados no perfil:
+      // vêm preenchidos para ele só conferir, criar a senha e aceitar os termos.
+      if (profile && !profile.registration_completed) {
+        setName(profile.name ?? '')
+        setCpf(profile.cpf ? formatCPF(profile.cpf) : '')
+        setPhone(profile.phone ? formatPhone(profile.phone) : '')
+        if (profile.addresses?.[0]) setAddress({ ...emptyAddress, ...profile.addresses[0] })
+      }
       setStatus(profile?.registration_completed ? 'already-complete' : 'ready')
     }
     init()

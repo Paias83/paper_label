@@ -2121,6 +2121,45 @@ a { color: inherit; }
 }
 
 /* =======================================================
+   Relatório de pedidos (OrderReport)
+   ======================================================= */
+.report-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.report-filters .form-field {
+  flex: 0 1 160px;
+  margin: 0;
+}
+.report-filters .report-filter-wide {
+  flex: 1 1 220px;
+}
+.report-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+}
+.report-items {
+  font-size: 0.85rem;
+  color: var(--charcoal);
+  max-width: 360px;
+}
+.admin-table .report-group-row td {
+  background: var(--paper);
+  font-weight: 600;
+  border-top: 1px solid var(--hairline);
+}
+.admin-table .report-total-row td {
+  font-weight: 700;
+  border-top: 2px solid var(--ink);
+}
+
+/* =======================================================
    Folha de pedido (OrderPrint) — tela + impressão A4
    ======================================================= */
 .order-print-page {
@@ -2241,6 +2280,11 @@ a { color: inherit; }
   text-align: right;
   white-space: nowrap;
 }
+.op-table .op-group-row td {
+  background: #f3f3f3;
+  font-weight: 700;
+  border-bottom: 1px solid #1c1b19;
+}
 
 .op-totals {
   margin-left: auto;
@@ -2288,6 +2332,9 @@ a { color: inherit; }
   }
   .order-print-actions {
     display: none !important;
+  }
+  .op-table tr {
+    break-inside: avoid;
   }
   .op-doc {
     max-width: none;

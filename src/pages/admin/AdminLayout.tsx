@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Navigate, Outlet } from 'react-router-dom'
+import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { onAdminBadgesRefresh } from '../../lib/adminBadges'
 
 type Status = 'checking' | 'allowed' | 'denied' | 'anonymous'
 
 export default function AdminLayout() {
+  const { pathname } = useLocation()
   const [status, setStatus] = useState<Status>('checking')
   const [pendingQuotes, setPendingQuotes] = useState(0)
   const [pendingOrders, setPendingOrders] = useState(0)
+  const [pendingNeeds, setPendingNeeds] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -30,23 +33,6 @@ export default function AdminLayout() {
 
       if (!active) return
       setStatus(profile?.role === 'admin' ? 'allowed' : 'denied')
-
-      if (profile?.role === 'admin') {
-        // Orçamentos que ainda não receberam proposta — precisam de atenção.
-        const { count } = await supabase
-          .from('quote_requests')
-          .select('id', { count: 'exact', head: true })
-          .in('status', ['solicitado', 'em_analise'])
-        if (active) setPendingQuotes(count ?? 0)
-
-        // Pedidos novos ou com mudança de status feita pelo sistema, ainda
-        // não conferidos pelo admin (ver Orders.tsx / mp-webhook).
-        const { count: ordersCount } = await supabase
-          .from('orders')
-          .select('id', { count: 'exact', head: true })
-          .is('admin_seen_at', null)
-        if (active) setPendingOrders(ordersCount ?? 0)
-      }
     }
 
     checkAccess()
@@ -60,6 +46,40 @@ export default function AdminLayout() {
       subscription.subscription.unsubscribe()
     }
   }, [])
+
+  // Badges do menu: recontados a cada troca de tela do painel, para sumirem
+  // logo depois que o admin trata o pedido/orçamento/necessidade (sem Realtime).
+  // Ações que não trocam de tela chamam refreshAdminBadges() (lib/adminBadges).
+  useEffect(() => {
+    if (status !== 'allowed') return
+    let active = true
+
+    async function loadBadges() {
+      const [quotesRes, ordersRes, needsRes] = await Promise.all([
+        // Orçamentos que ainda não receberam proposta — precisam de atenção.
+        supabase
+          .from('quote_requests')
+          .select('id', { count: 'exact', head: true })
+          .in('status', ['solicitado', 'em_analise']),
+        // Pedidos novos ou com mudança de status feita pelo sistema, ainda
+        // não conferidos pelo admin (ver Orders.tsx / mp-webhook).
+        supabase.from('orders').select('id', { count: 'exact', head: true }).is('admin_seen_at', null),
+        // Matéria-prima que faltou para algum pedido (gerada por fulfill_order).
+        supabase.from('purchase_needs').select('id', { count: 'exact', head: true }).eq('status', 'pendente'),
+      ])
+      if (!active) return
+      setPendingQuotes(quotesRes.count ?? 0)
+      setPendingOrders(ordersRes.count ?? 0)
+      setPendingNeeds(needsRes.count ?? 0)
+    }
+
+    loadBadges()
+    const unsubscribe = onAdminBadgesRefresh(loadBadges)
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [status, pathname])
 
   if (status === 'checking') {
     return (
@@ -100,7 +120,10 @@ export default function AdminLayout() {
 
           <span className="admin-nav-label">Estoque</span>
           <NavLink to="/admin/estoque">Matérias-primas</NavLink>
-          <NavLink to="/admin/estoque/necessidades-de-compra">Necessidades de compra</NavLink>
+          <NavLink to="/admin/estoque/necessidades-de-compra">
+            Necessidades de compra
+            {pendingNeeds > 0 && <span className="nav-badge">{pendingNeeds}</span>}
+          </NavLink>
           <NavLink to="/admin/fornecedores">Fornecedores</NavLink>
 
           <span className="admin-nav-label">Vendas</span>
@@ -112,6 +135,8 @@ export default function AdminLayout() {
             Orçamentos
             {pendingQuotes > 0 && <span className="nav-badge">{pendingQuotes}</span>}
           </NavLink>
+          <NavLink to="/admin/clientes">Clientes</NavLink>
+          <NavLink to="/admin/relatorios/pedidos">Relatório de pedidos</NavLink>
         </nav>
         <div className="admin-sidebar-footer">
           <Link to="/">Voltar à loja</Link>

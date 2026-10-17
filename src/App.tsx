@@ -24,6 +24,10 @@ import CategoriesList from './pages/admin/CategoriesList'
 import Orders from './pages/admin/Orders'
 import OrderForm from './pages/admin/OrderForm'
 import OrderPrint from './pages/admin/OrderPrint'
+import OrderReport from './pages/admin/OrderReport'
+import OrderReportPrint from './pages/admin/OrderReportPrint'
+import CustomersList from './pages/admin/customers/CustomersList'
+import CustomerForm from './pages/admin/customers/CustomerForm'
 import Quotes from './pages/admin/Quotes'
 import AdminQuoteThread from './pages/admin/QuoteThread'
 import SuppliersList from './pages/admin/suppliers/SuppliersList'
@@ -58,6 +62,7 @@ export default function App() {
 
             {/* Folha de pedido em A4 (fora do AdminLayout, mas com checagem de admin própria) */}
             <Route path="/admin/pedidos/:id/pdf" element={<OrderPrint />} />
+            <Route path="/admin/relatorios/pedidos/pdf" element={<OrderReportPrint />} />
 
             {/* Painel administrativo — acesso restrito a role=admin (checagem em AdminLayout) */}
             <Route path="/admin" element={<AdminLayout />}>
@@ -68,6 +73,10 @@ export default function App() {
               <Route path="pedidos" element={<Orders />} />
               <Route path="pedidos/novo" element={<OrderForm />} />
               <Route path="pedidos/:id/editar" element={<OrderForm />} />
+              <Route path="relatorios/pedidos" element={<OrderReport />} />
+              <Route path="clientes" element={<CustomersList />} />
+              <Route path="clientes/novo" element={<CustomerForm />} />
+              <Route path="clientes/:id" element={<CustomerForm />} />
               <Route path="orcamentos" element={<Quotes />} />
               <Route path="orcamentos/:id" element={<AdminQuoteThread />} />
               <Route path="fornecedores" element={<SuppliersList />} />

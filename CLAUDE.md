@@ -79,6 +79,7 @@ quando há CEP completo (recalcula com CEP/quantidades). O carrinho em si fica n
 | `calculate-shipping` | cotação no Melhor Envio (lógica em `_shared/melhorEnvio.ts`, peso/medidas lidos do banco) | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
 | `shipping-label` | admin-only; etiquetas do Melhor Envio: `preview` / `buy` (carrinho → compra com saldo da carteira → gera) / `print` (etiqueta + DACE) / `cancel` | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
 | `create-manual-order` / `update-manual-order` | pedido manual do admin (checam `role='admin'` pelo JWT) | — |
+| `save-customer` | admin-only; cadastro manual de cliente: cria a conta (`auth.admin.createUser`, e-mail já confirmado, sem senha, sem e-mail enviado) ou edita nome/CPF/telefone/endereço | — |
 | `send-order-status-email` | admin-only; chamada por `Orders.tsx` ao mudar status | `RESEND_API_KEY` |
 | `_shared/orderEmail.ts` | `sendOrderStatusEmail` (por status), `sendPaymentNoticeEmail` (Pix/boleto, análise, recusa) e `sendStoreNewOrderEmail` (aviso de venda para `contato@`, ao aprovar) via API HTTP do Resend; HTML com itens/total no visual da loja | |
 
@@ -134,7 +135,10 @@ logs das Edge Functions no dashboard do Supabase.
   `enviado`/`entregue` e não têm código de rastreio.
 - **Sinalização no admin**: `orders.admin_seen_at` nulo = pedido novo/alterado (badge
   vermelho em "Pedidos"); `last_status_change_by` = `'sistema'` (MP) ou `'admin'`.
-  Badges são carregados ao montar a página (sem Realtime).
+  Badges de Pedidos, Orçamentos e Necessidades de compra (`purchase_needs` pendentes)
+  ficam no `AdminLayout` e são recontados a cada troca de tela do painel (sem Realtime);
+  ação que muda a contagem sem trocar de tela chama `refreshAdminBadges()`
+  (`lib/adminBadges.ts`).
 - **`fulfill_order` (RPC)**: dá baixa em estoque pronto, empenha matéria-prima ou gera
   `purchase_needs`. É chamada pelo `mp-webhook` e pelos pedidos manuais salvos como
   `pago`. **Sempre reusar — nunca recriar essa lógica.** Itens sem `product_id`
@@ -145,6 +149,15 @@ logs das Edge Functions no dashboard do Supabase.
   (`user_id`; sem ele não sai e-mail). Seletor lista também produtos inativos. Só é
   editável quando `source='manual'` **e** `status='pendente'`; depois de pago, só
   cancelando e recriando (editar dessincronizaria o estoque).
+- **Cliente manual** (`/admin/clientes`, `save-customer`): conta de verdade criada pelo
+  admin, `profiles.created_by_admin = true` e `registration_completed = false`. Quando o
+  cliente entra no site, o `/entrar` manda o link de continuar cadastro e
+  `CompleteRegistration.tsx` vem preenchido; ele cria a senha e aceita os termos. E-mail
+  obrigatório; venda sem e-mail continua só com `customer_name` no pedido. Admin não tem
+  UPDATE em `profiles` pela RLS — edição passa pela function.
+- **Relatório de pedidos** (`/admin/relatorios/pedidos`, PDF A4 em `.../pdf` no esquema do
+  `OrderPrint`): filtros na URL (`de`, `ate`, `cliente`, `status`, `agrupar`), lógica
+  única em `lib/orderReport.ts`. Cliente = `user_id` ou, sem conta, o `customer_name`.
 - **Ficha técnica**: `product_materials` liga produto → matéria-prima (`raw_materials`);
   produção (`product_productions`) baixa material via `stock_movements`.
   `MaterialQuickForm` cadastra matéria-prima de dentro do `ProductForm`.

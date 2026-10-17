@@ -6,7 +6,7 @@ import AddressForm from '../../components/AddressForm'
 import { advanceOnEnter } from '../../lib/formNav'
 
 type ItemRow = { product_id: string; quantity: number; price_at_purchase: number }
-type CustomerOption = { id: string; name: string | null; email: string | null }
+type CustomerOption = { id: string; name: string | null; email: string | null; addresses?: ShippingAddress[] }
 
 const emptyAddress: ShippingAddress = {
   cep: '',
@@ -105,7 +105,7 @@ export default function OrderForm() {
     const timer = setTimeout(() => {
       supabase
         .from('profiles')
-        .select('id, name, email')
+        .select('id, name, email, addresses')
         .or(`name.ilike.%${term}%,email.ilike.%${term}%`)
         .limit(8)
         .then(({ data }) => setCustomerResults(data ?? []))
@@ -118,6 +118,9 @@ export default function OrderForm() {
     setCustomerQuery('')
     setCustomerResults([])
     setCustomerName(customer.name || customer.email || '')
+    // Endereço do cadastro vira o de entrega, se ainda não foi digitado outro.
+    const saved = customer.addresses?.[0]
+    if (saved && !address.cep) setAddress({ ...emptyAddress, ...saved })
   }
 
   function clearCustomer() {
@@ -219,7 +222,12 @@ export default function OrderForm() {
 
       <div className="form-card">
         <div className="form-field" style={{ position: 'relative' }}>
-          <label className="form-field-label">Cliente cadastrado (opcional)</label>
+          <label className="form-field-label">
+            Cliente cadastrado (opcional) ·{' '}
+            <Link to="/admin/clientes/novo" target="_blank" rel="noreferrer" className="table-action-link">
+              cadastrar cliente novo
+            </Link>
+          </label>
           {selectedCustomer ? (
             <div className="customer-chip">
               <span>

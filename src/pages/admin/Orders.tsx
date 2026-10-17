@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, type Order, type OrderItem, type Product, type Profile, type QuoteRequest } from '../../lib/supabase'
 import { callShippingLabel, type LabelLinks } from '../../lib/shippingLabel'
+import { refreshAdminBadges } from '../../lib/adminBadges'
 import ShippingLabelModal, { LabelResult } from './ShippingLabelModal'
 
 const STATUS_OPTIONS_ENTREGA: Order['status'][] = ['pendente', 'pago', 'enviado', 'entregue', 'cancelado']
@@ -66,6 +67,7 @@ export default function Orders() {
       prev.map((o) => (o.id === id ? { ...o, status, admin_seen_at, last_status_change_by: 'admin' } : o))
     )
     await supabase.from('orders').update({ status, admin_seen_at, last_status_change_by: 'admin' }).eq('id', id)
+    refreshAdminBadges()
     // Best-effort — se o e-mail falhar, não trava a troca de status na UI.
     supabase.functions.invoke('send-order-status-email', { body: { order_id: id } })
   }
@@ -77,6 +79,7 @@ export default function Orders() {
       const admin_seen_at = new Date().toISOString()
       setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, admin_seen_at } : o)))
       await supabase.from('orders').update({ admin_seen_at }).eq('id', order.id)
+      refreshAdminBadges()
     }
   }
 

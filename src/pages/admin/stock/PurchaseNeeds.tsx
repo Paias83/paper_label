@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, type PurchaseNeed, type RawMaterial, type Supplier } from '../../../lib/supabase'
+import { refreshAdminBadges } from '../../../lib/adminBadges'
 
 export default function PurchaseNeeds() {
   const [needs, setNeeds] = useState<PurchaseNeed[]>([])
@@ -29,6 +30,7 @@ export default function PurchaseNeeds() {
   async function markResolved(id: string) {
     setNeeds((prev) => prev.map((n) => (n.id === id ? { ...n, status: 'resolvido' } : n)))
     await supabase.from('purchase_needs').update({ status: 'resolvido', resolved_at: new Date().toISOString() }).eq('id', id)
+    refreshAdminBadges()
   }
 
   const filtered = needs.filter((n) => showResolved || n.status === 'pendente')
