@@ -71,10 +71,11 @@ quando há CEP completo (recalcula com CEP/quantidades). O carrinho em si fica n
 
 | Função | O que faz | Secrets |
 |---|---|---|
-| `process-payment` | **pagamento embutido no carrinho** (Payment Brick): `create_order` grava o pedido `pendente` e `pay` cria o pagamento na Payments API com o total **do banco** | `MP_ACCESS_TOKEN`, `MELHOR_ENVIO_TOKEN` |
+| `process-payment` | **pagamento embutido** (Payment Brick, carrinho e orçamento): `create_order` / `create_quote_order` gravam o pedido `pendente` e `pay` cria o pagamento na Payments API com o total **do banco** | `MP_ACCESS_TOKEN`, `MELHOR_ENVIO_TOKEN` |
 | `_shared/checkoutOrder.ts` | criação do pedido da loja: **preço/nome dos produtos vêm do banco e o frete é recotado pelo `service_id`** — do body só usa ids, quantidades, serviço e endereço | |
 | `create-preference` | legado/plano B: Checkout Pro (redireciona), usado só se não houver Public Key | `MP_ACCESS_TOKEN`, `MELHOR_ENVIO_TOKEN` |
-| `create-quote-order` | igual à anterior, mas a partir de orçamento aprovado | `MP_ACCESS_TOKEN` |
+| `_shared/quoteOrder.ts` | orçamento → pedido (valor/frete do banco); se o orçamento já está `aprovado` com pedido `pendente`, reaproveita (atualiza a entrega); com pedido `cancelado`, cria outro | |
+| `create-quote-order` | legado/plano B do orçamento: Checkout Pro (redireciona), só sem Public Key | `MP_ACCESS_TOKEN` |
 | `mp-webhook` | notificação do MP → aprovado (valor ≥ total do pedido): `pago` + `fulfill_order`; Pix/boleto/análise/recusado: só e-mail (pedido segue `pendente`); `cancelled` (Pix/boleto vencido): cancela | `MP_ACCESS_TOKEN` |
 | `calculate-shipping` | cotação no Melhor Envio (lógica em `_shared/melhorEnvio.ts`, peso/medidas lidos do banco) | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
 | `shipping-label` | admin-only; etiquetas do Melhor Envio: `preview` / `buy` (carrinho → compra com saldo da carteira → gera) / `print` (etiqueta + DACE) / `cancel` | `MELHOR_ENVIO_TOKEN`, `STORE_ORIGIN_CEP` |
@@ -169,7 +170,9 @@ logs das Edge Functions no dashboard do Supabase.
 - **Orçamento** (`quote_requests` + `quote_messages`, anexos no bucket **privado**
   `quote-attachments`, pasta `<user_id do cliente>/`, link assinado via
   `lib/quoteAttachments.ts` + `AttachmentImage`; ver `fix-quote-attachments-private.sql`): conversa cliente/admin com proposta de preço e frete; aprovado
-  vira pedido via `create-quote-order`.
+  vira pedido e é pago **embutido** em `QuoteThread.tsx` (`process-payment`,
+  `create_quote_order`); orçamento `aprovado` com pedido pendente/cancelado volta a
+  mostrar "Pagar agora".
 - **Cadastro em duas etapas**: `/entrar` pede só o e-mail → `email_status()` decide
   login ou envio de confirmação → `/completar-cadastro` (nome, CPF validado em
   `lib/cpf.ts`, telefone, endereço, senha) → desloga e volta para `/entrar` com o
@@ -258,9 +261,8 @@ logs das Edge Functions no dashboard do Supabase.
 
 ## Pendências e próximos passos
 
-- **Pagamento de orçamento** (`create-quote-order`) ainda usa Checkout Pro
-  (redireciona); dá para reaproveitar `EmbeddedPayment.tsx`. As rotas
-  `/checkout/sucesso|falha|pendente` das `back_urls` continuam sem página.
+- Retorno do Checkout Pro (`/checkout/sucesso|falha|pendente`, `CheckoutReturn.tsx`)
+  só aparece no plano B; mostra o status do pedido no banco (`external_reference`).
 - **Payments API é "legado"** no Mercado Pago (nova: Orders API, `/v1/orders`). O
   embutido usa a Payments API porque é a da doc do Brick e a que o `mp-webhook` lê;
   migrar exige reescrever o webhook.

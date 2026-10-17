@@ -3,6 +3,8 @@
 //
 // - create_order: grava o pedido "pendente" (preço e frete calculados no
 //   servidor — _shared/checkoutOrder.ts) e devolve id + total para o Brick.
+// - create_quote_order: o mesmo a partir de um orçamento com proposta
+//   (_shared/quoteOrder.ts) — valor e frete vêm do orçamento no banco.
 // - pay: recebe o formData do Brick (cartão já tokenizado pelo Mercado Pago,
 //   ou Pix/boleto) e cria o pagamento na Payments API com o total DO BANCO —
 //   o valor que vem do navegador é ignorado. Devolve id/status para o
@@ -19,6 +21,7 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { CheckoutError, createStoreOrder } from '../_shared/checkoutOrder.ts'
+import { QuoteOrderError, createQuoteOrder } from '../_shared/quoteOrder.ts'
 
 const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -81,6 +84,11 @@ serve(async (req) => {
       return jsonResponse({ order_id: order.id, total: Number(order.total), payer_email: user.email })
     }
 
+    if (body.action === 'create_quote_order') {
+      const { order } = await createQuoteOrder(admin, user.id, body)
+      return jsonResponse({ order_id: order.id, total: Number(order.total), payer_email: user.email })
+    }
+
     if (body.action === 'pay') {
       const { order_id, form } = body as { order_id: string; form: BrickFormData }
       const { data: order } = await admin.from('orders').select('*').eq('id', order_id).single()
@@ -138,6 +146,7 @@ serve(async (req) => {
     return jsonResponse({ error: 'Ação inválida.' }, 400)
   } catch (err) {
     if (err instanceof CheckoutError) return jsonResponse({ error: err.message }, 400)
+    if (err instanceof QuoteOrderError) return jsonResponse({ error: err.message }, err.status)
     console.error(err)
     return jsonResponse({ error: 'Erro inesperado ao processar o pagamento. Tente novamente.' }, 500)
   }

@@ -3,7 +3,10 @@ import { supabase } from './supabase'
 // Chama a Edge Function process-payment (pagamento embutido no carrinho). Em
 // erro, a função responde { error } com status 4xx — o supabase-js descarta o
 // corpo nesse caso, então a mensagem é lida de error.context.
-export async function callProcessPayment<T>(action: 'create_order' | 'pay', body: object): Promise<T> {
+export async function callProcessPayment<T>(
+  action: 'create_order' | 'create_quote_order' | 'pay',
+  body: object
+): Promise<T> {
   const { data, error } = await supabase.functions.invoke('process-payment', { body: { action, ...body } })
   if (error) {
     let message = 'Não foi possível processar o pagamento. Tente novamente.'

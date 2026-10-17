@@ -17,6 +17,7 @@ import MyQuotes from './pages/store/MyQuotes'
 import MyOrders from './pages/store/MyOrders'
 import QuoteThread from './pages/store/QuoteThread'
 
+import CheckoutReturn from './pages/store/CheckoutReturn'
 import AdminLayout from './pages/admin/AdminLayout'
 import ProductList from './pages/admin/ProductList'
 import ProductForm from './pages/admin/ProductForm'
@@ -58,6 +59,9 @@ export default function App() {
               <Route path="/meus-orcamentos" element={<MyQuotes />} />
               <Route path="/meus-pedidos" element={<MyOrders />} />
               <Route path="/meus-orcamentos/:id" element={<QuoteThread />} />
+              <Route path="/checkout/sucesso" element={<CheckoutReturn variant="sucesso" />} />
+              <Route path="/checkout/falha" element={<CheckoutReturn variant="falha" />} />
+              <Route path="/checkout/pendente" element={<CheckoutReturn variant="pendente" />} />
             </Route>
 
             {/* Folha de pedido em A4 (fora do AdminLayout, mas com checagem de admin própria) */}

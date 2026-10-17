@@ -7,6 +7,8 @@ import AddressForm, { isAddressComplete } from '../../components/AddressForm'
 import DeliveryMethodPicker, { PICKUP_INFO, type DeliveryMethod } from '../../components/DeliveryMethodPicker'
 import AttachmentImage from '../../components/AttachmentImage'
 import { uploadQuoteAttachment } from '../../lib/quoteAttachments'
+import EmbeddedPayment, { MP_PUBLIC_KEY } from '../../components/EmbeddedPayment'
+import { callProcessPayment } from '../../lib/payment'
 
 const emptyAddress: ShippingAddress = {
   cep: '',
@@ -35,9 +37,23 @@ export default function QuoteThread() {
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('entrega')
   const [address, setAddress] = useState<ShippingAddress>(emptyAddress)
   const [paying, setPaying] = useState(false)
+  // Pedido ligado ao orçamento já aprovado: 'pendente' (fechou a página antes
+  // de pagar) ou 'cancelado' (Pix/boleto venceu) ainda podem ser pagos.
+  const [linkedOrderStatus, setLinkedOrderStatus] = useState<string | null>(null)
+  const [checkout, setCheckout] = useState<{ orderId: string; total: number; payerEmail: string; key: string } | null>(
+    null
+  )
+  const [paidOrderId, setPaidOrderId] = useState<string | null>(null)
 
   const canApprove = deliveryMethod === 'retirada' || isAddressComplete(address)
   const shippingCost = deliveryMethod === 'retirada' ? 0 : quote?.shipping_cost ?? 0
+  // Mudou a entrega depois de abrir o pagamento: fecha o formulário (o total muda).
+  const checkoutKey = JSON.stringify([deliveryMethod, deliveryMethod === 'entrega' ? address : null])
+  const activeCheckout = checkout && checkout.key === checkoutKey ? checkout : null
+  const awaitingPayment =
+    quote?.final_price != null &&
+    (quote.status === 'proposta_enviada' ||
+      (quote.status === 'aprovado' && (linkedOrderStatus === 'pendente' || linkedOrderStatus === 'cancelado')))
 
   async function load() {
     if (!id) return
@@ -45,7 +61,12 @@ export default function QuoteThread() {
       supabase.from('quote_requests').select('*').eq('id', id).single(),
       supabase.from('quote_messages').select('*').eq('quote_request_id', id).order('created_at'),
     ])
-    setQuote(quoteRes.data ?? null)
+    const loadedQuote = quoteRes.data ?? null
+    if (loadedQuote?.status === 'aprovado' && loadedQuote.order_id) {
+      const { data: order } = await supabase.from('orders').select('status').eq('id', loadedQuote.order_id).single()
+      setLinkedOrderStatus(order?.status ?? null)
+    }
+    setQuote(loadedQuote)
     setMessages(messagesRes.data ?? [])
     setLoading(false)
   }
@@ -53,6 +74,20 @@ export default function QuoteThread() {
   useEffect(() => {
     load()
   }, [id])
+
+  // Endereço do cadastro pré-preenchido, como no carrinho.
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('profiles')
+      .select('addresses')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        const saved = data?.addresses?.[0]
+        if (saved) setAddress((current) => (current.cep ? current : { ...emptyAddress, ...saved }))
+      })
+  }, [user])
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -102,8 +137,39 @@ export default function QuoteThread() {
     }
   }
 
+  // Pagamento embutido: cria (ou reaproveita) o pedido do orçamento e abre o
+  // formulário do Mercado Pago na própria página.
   async function handleAprovar() {
     if (!quote || !canApprove) return
+    if (!MP_PUBLIC_KEY) return handleAprovarCheckoutPro()
+    setPaying(true)
+    try {
+      const data = await callProcessPayment<{ order_id: string; total: number; payer_email: string }>(
+        'create_quote_order',
+        {
+          quote_request_id: quote.id,
+          shipping_type: deliveryMethod,
+          address: deliveryMethod === 'entrega' ? address : null,
+        }
+      )
+      setCheckout({ orderId: data.order_id, total: data.total, payerEmail: data.payer_email, key: checkoutKey })
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  function handlePaymentApproved() {
+    if (!activeCheckout) return
+    setPaidOrderId(activeCheckout.orderId)
+    setCheckout(null)
+    load()
+  }
+
+  // Plano B (sem Public Key): Checkout Pro, redireciona para o Mercado Pago.
+  async function handleAprovarCheckoutPro() {
+    if (!quote) return
     setPaying(true)
     try {
       const { data, error } = await supabase.functions.invoke('create-quote-order', {
@@ -162,8 +228,28 @@ export default function QuoteThread() {
         ))}
       </div>
 
-      {quote.status === 'proposta_enviada' && quote.final_price != null && (
+      {paidOrderId && (
+        <div className="form-card" style={{ marginTop: 'var(--space-3)' }}>
+          <h3>Pagamento confirmado!</h3>
+          <p>
+            Recebemos o pagamento do pedido <strong>#{paidOrderId.slice(0, 8)}</strong>. Você vai receber a confirmação
+            por e-mail e pode acompanhar tudo em "Meus pedidos".
+          </p>
+          <Link to="/meus-pedidos" className="seal-button">
+            Ver meus pedidos
+          </Link>
+        </div>
+      )}
+
+      {!paidOrderId && awaitingPayment && quote.final_price != null && (
         <div className="checkout-summary">
+          {quote.status === 'aprovado' && (
+            <p className="checkout-hint" style={{ marginTop: 0 }}>
+              {linkedOrderStatus === 'cancelado'
+                ? 'O pagamento anterior venceu. Você pode pagar de novo abaixo.'
+                : 'Você aprovou esta proposta, mas o pagamento ainda não foi concluído.'}
+            </p>
+          )}
           <div className="checkout-summary-row">
             <span>Valor proposto</span>
             <span>{quote.final_price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
@@ -191,23 +277,35 @@ export default function QuoteThread() {
                 <AddressForm address={address} onChange={setAddress} title="Endereço de entrega" />
               )}
 
-              <button
-                className="seal-button"
-                onClick={handleAprovar}
-                disabled={paying || !canApprove}
-                style={{ width: '100%', marginTop: 12 }}
-              >
-                {paying ? 'Redirecionando…' : 'Confirmar e pagar'}
-              </button>
+              {activeCheckout ? (
+                <EmbeddedPayment
+                  key={activeCheckout.orderId}
+                  orderId={activeCheckout.orderId}
+                  amount={activeCheckout.total}
+                  payerEmail={activeCheckout.payerEmail}
+                  onApproved={handlePaymentApproved}
+                />
+              ) : (
+                <button
+                  className="seal-button"
+                  onClick={handleAprovar}
+                  disabled={paying || !canApprove}
+                  style={{ width: '100%', marginTop: 12 }}
+                >
+                  {paying ? 'Preparando o pagamento…' : 'Ir para o pagamento'}
+                </button>
+              )}
             </>
           ) : (
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button className="seal-button" onClick={() => setShowAddressForm(true)} style={{ flex: 1 }}>
-                Aprovar e pagar
+                {quote.status === 'aprovado' ? 'Pagar agora' : 'Aprovar e pagar'}
               </button>
-              <button className="ghost-button" onClick={handlePedirAjuste} style={{ flex: 1 }}>
-                Pedir ajuste
-              </button>
+              {quote.status === 'proposta_enviada' && (
+                <button className="ghost-button" onClick={handlePedirAjuste} style={{ flex: 1 }}>
+                  Pedir ajuste
+                </button>
+              )}
             </div>
           )}
         </div>
