@@ -1365,6 +1365,9 @@ a { color: inherit; }
 .admin-main input[type='text'],
 .admin-main input[type='number'],
 .admin-main input[type='search'],
+.admin-main input[type='email'],
+.admin-main input[type='tel'],
+.admin-main input[type='date'],
 .admin-main textarea,
 .admin-main select {
   width: 100%;
@@ -1384,6 +1387,9 @@ a { color: inherit; }
 .admin-main input[type='text'],
 .admin-main input[type='number'],
 .admin-main input[type='search'],
+.admin-main input[type='email'],
+.admin-main input[type='tel'],
+.admin-main input[type='date'],
 .admin-main select,
 .price-field {
   height: 46px;
@@ -2124,7 +2130,7 @@ a { color: inherit; }
    Relatório de pedidos (OrderReport)
    ======================================================= */
 .report-filters {
-  display: flex;
+  flex-direction: row; /* .form-card empilha em coluna */
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--space-2);
