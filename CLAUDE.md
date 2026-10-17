@@ -265,8 +265,10 @@ logs das Edge Functions no dashboard do Supabase.
 
 ## Notas no Obsidian
 
-A nota deste projeto fica no cofre do Obsidian:
-`C:\Users\alexandre.paias\Documents\Obsidian\Principal\10 Projetos\E-commerce Papelaria de Luxo.md`
+A nota deste projeto fica no cofre do Obsidian, em `%USERPROFILE%\Documents\Obsidian\Principal\10 Projetos\E-commerce Papelaria de Luxo.md`:
+- PC principal: `C:\Users\alexandre.paias\Documents\Obsidian\Principal\10 Projetos\E-commerce Papelaria de Luxo.md`
+- Outro PC: `C:\Users\paias\Documents\Obsidian\Principal\10 Projetos\E-commerce Papelaria de Luxo.md`
+Use o que existir na máquina atual.
 
 Ao concluir uma tarefa relevante (feature nova, decisão técnica, bug resolvido, mudança de deploy/stack),
 atualize essa nota antes de encerrar:
@@ -277,5 +279,5 @@ atualize essa nota antes de encerrar:
 
 Soluções reutilizáveis em outros projetos vão para `20 Conhecimento\` no cofre
 (modelo: `90 Templates\Problema e solução.md`), com link [[E-commerce Papelaria de Luxo]].
-Siga as convenções de `C:\Users\alexandre.paias\Documents\Obsidian\Principal\CLAUDE.md`.
+Siga as convenções do `CLAUDE.md` na raiz do cofre.
 Nunca grave senhas, tokens, chaves de API ou conteúdo de `.env` nas notas (o cofre vai para o GitHub).
