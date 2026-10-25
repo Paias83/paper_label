@@ -159,6 +159,14 @@ logs das Edge Functions no dashboard do Supabase.
 - **Relatório de pedidos** (`/admin/relatorios/pedidos`, PDF A4 em `.../pdf` no esquema do
   `OrderPrint`): filtros na URL (`de`, `ate`, `cliente`, `status`, `agrupar`), lógica
   única em `lib/orderReport.ts`. Cliente = `user_id` ou, sem conta, o `customer_name`.
+- **Relatórios de produtos e de matérias-primas** (`/admin/relatorios/produtos` e
+  `/admin/relatorios/materias-primas`, PDF em `.../pdf`): mesmo esquema, lógica em
+  `lib/productReport.ts` / `lib/materialReport.ts` (carrega a tabela inteira e filtra no
+  navegador). Produtos: busca, categoria, situação (loja/inativo/arquivado), estoque
+  pronto, agrupar por categoria; mostra margem real e estoque a custo/a preço. Matéria-
+  prima: busca (nome/cor/marca), fornecedor, estoque baixo (`stock <= min_stock`, mesma
+  regra da lista)/zerado, ativas, agrupar por fornecedor; valor em estoque = estoque ×
+  custo. Folhas A4 checam admin via `components/AdminPrintGate.tsx`.
 - **Ficha técnica**: `product_materials` liga produto → matéria-prima (`raw_materials`);
   produção (`product_productions`) baixa material via `stock_movements`.
   `MaterialQuickForm` cadastra matéria-prima de dentro do `ProductForm`.
@@ -181,6 +189,14 @@ logs das Edge Functions no dashboard do Supabase.
 - **Excluir produto**: tenta DELETE; se a FK barrar (`23503`), oferece arquivar
   (`archived=true, active=false`). Duplicidade barrada por índices únicos
   normalizados (`add-duplicate-guards.sql`, erro `23505` tratado nos forms).
+  Matéria-prima (nome+cor+marca) e fornecedor (nome **ou** CNPJ/CPF) usam
+  `public.norm_text()` — sem acento, minúsculas, espaços colapsados
+  (`add-duplicate-guards-v2.sql`); o front avisa antes via `lib/duplicates.ts`
+  (mesma regra) e o fornecedor valida CNPJ/CPF (`lib/cpf.ts`).
+  Nome do produto, nome/cor/marca da matéria-prima e nome/contato do fornecedor passam
+  por `titleCase()` (`lib/textCase.ts`) no blur e ao salvar: só a 1ª letra de cada
+  palavra vira maiúscula (siglas como PLA ficam), preposições (de, da, e…) e unidades
+  (cm, gr, kg…) ficam minúsculas. Cadastros antigos já foram convertidos (2026-10-24).
 
 ## E-mails
 
@@ -232,6 +248,9 @@ logs das Edge Functions no dashboard do Supabase.
 - Público-alvo do admin é leigo: formulários usam `advanceOnEnter` (`lib/formNav.ts`)
   para Enter ir ao próximo campo em vez de salvar.
 - Valores monetários em R$ com `CurrencyInput`; preços/quantidades usam `--font-mono`.
+- Telefone `(44)3333-4444` / `(44)99999-4444` (`lib/phone.ts`), CPF `000.000.000-00` e CNPJ
+  `00.000.000/0000-00` (`lib/cpf.ts`, `formatDocument` escolhe pelo nº de dígitos), formatados
+  enquanto digita. `profiles` guarda só dígitos (formata na tela); `suppliers` guarda formatado.
 - Folha de pedido A4 (`OrderPrint.tsx`) usa CSS `@page` + `window.print()` — sem
   biblioteca de PDF.
 - Design "papel/lacre": marfim + vinho (`--wine`), cantos quase retos (`--radius: 2px`).

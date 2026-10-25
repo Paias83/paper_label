@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { supabase, type RawMaterial, type Supplier } from '../../../lib/supabase'
 import CurrencyInput from '../../../components/CurrencyInput'
 import { advanceOnEnter } from '../../../lib/formNav'
+import { findDuplicateMaterial } from '../../../lib/duplicates'
+import { titleCase } from '../../../lib/textCase'
 
 const UNITS = ['un', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'cx', 'pct', 'kWh', 'hora']
 
@@ -30,17 +32,27 @@ export default function MaterialQuickForm({ suppliers, onClose, onCreated }: Pro
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.name.trim()) return
+    const name = titleCase(form.name)
+    const color = titleCase(form.color)
+    const brand = titleCase(form.brand)
+    if (!name) return
     setSaving(true)
 
+    const duplicate = await findDuplicateMaterial({ name, color, brand })
+    if (duplicate) {
+      setSaving(false)
+      alert(`Já existe uma matéria-prima com esse nome, cor e marca: ${duplicate}.`)
+      return
+    }
+
     const payload = {
-      name: form.name.trim(),
+      name,
       unit: form.unit,
       min_stock: form.min_stock,
       cost_price: form.cost_price,
       supplier_id: form.supplier_id || null,
-      color: form.color.trim() || null,
-      brand: form.brand.trim() || null,
+      color: color || null,
+      brand: brand || null,
       active: true,
     }
 
@@ -90,6 +102,7 @@ export default function MaterialQuickForm({ suppliers, onClose, onCreated }: Pro
               autoFocus
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onBlur={() => setForm((f) => ({ ...f, name: titleCase(f.name) }))}
               required
             />
           </div>
@@ -104,6 +117,7 @@ export default function MaterialQuickForm({ suppliers, onClose, onCreated }: Pro
                 type="text"
                 value={form.color}
                 onChange={(e) => setForm({ ...form, color: e.target.value })}
+                onBlur={() => setForm((f) => ({ ...f, color: titleCase(f.color) }))}
               />
             </div>
             <div className="form-field">
@@ -115,6 +129,7 @@ export default function MaterialQuickForm({ suppliers, onClose, onCreated }: Pro
                 type="text"
                 value={form.brand}
                 onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                onBlur={() => setForm((f) => ({ ...f, brand: titleCase(f.brand) }))}
               />
             </div>
           </div>

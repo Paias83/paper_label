@@ -4,6 +4,7 @@ import { supabase, type Category, type RawMaterial, type Supplier } from '../../
 import CurrencyInput from '../../components/CurrencyInput'
 import { advanceOnEnter } from '../../lib/formNav'
 import MaterialQuickForm from './stock/MaterialQuickForm'
+import { titleCase } from '../../lib/textCase'
 
 const emptyForm = {
   name: '',
@@ -198,25 +199,23 @@ export default function ProductForm() {
   }, [form.margin_percent, totalCost])
 
   // Bloqueia cadastro repetido: mesmo nome + mesma categoria.
-  async function isDuplicate() {
+  async function isDuplicate(name: string) {
     const categoryId = form.category_id || null
-    const { data } = await supabase
-      .from('products')
-      .select('id, name, category_id')
-      .ilike('name', form.name.trim())
+    const { data } = await supabase.from('products').select('id, name, category_id').ilike('name', name)
     return (data ?? []).some(
       (p) =>
         p.id !== id &&
-        p.name.trim().toLowerCase() === form.name.trim().toLowerCase() &&
+        p.name.trim().toLowerCase() === name.toLowerCase() &&
         (p.category_id ?? null) === categoryId
     )
   }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    const name = titleCase(form.name)
     setSaving(true)
 
-    if (await isDuplicate()) {
+    if (await isDuplicate(name)) {
       setSaving(false)
       alert('Já existe um produto com esse nome nessa categoria.')
       return
@@ -224,6 +223,7 @@ export default function ProductForm() {
 
     const payload = {
       ...form,
+      name,
       category_id: form.category_id || null,
       cost_price: totalCost,
       price: autoPricing ? autoPrice : form.price,
@@ -288,6 +288,7 @@ export default function ProductForm() {
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onBlur={() => setForm((f) => ({ ...f, name: titleCase(f.name) }))}
                 required
               />
             </div>

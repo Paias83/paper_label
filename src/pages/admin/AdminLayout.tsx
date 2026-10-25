@@ -136,7 +136,11 @@ export default function AdminLayout() {
             {pendingQuotes > 0 && <span className="nav-badge">{pendingQuotes}</span>}
           </NavLink>
           <NavLink to="/admin/clientes">Clientes</NavLink>
-          <NavLink to="/admin/relatorios/pedidos">Relatório de pedidos</NavLink>
+
+          <span className="admin-nav-label">Relatórios</span>
+          <NavLink to="/admin/relatorios/pedidos">Pedidos</NavLink>
+          <NavLink to="/admin/relatorios/produtos">Produtos</NavLink>
+          <NavLink to="/admin/relatorios/materias-primas">Matérias-primas</NavLink>
         </nav>
         <div className="admin-sidebar-footer">
           <Link to="/">Voltar à loja</Link>

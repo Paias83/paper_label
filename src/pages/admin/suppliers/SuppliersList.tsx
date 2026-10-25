@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, type Supplier } from '../../../lib/supabase'
+import { formatPhone } from '../../../lib/phone'
 
 export default function SuppliersList() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -58,7 +59,7 @@ export default function SuppliersList() {
                   <span className="product-name">{s.name}</span>
                 </td>
                 <td>{s.contact_name || '—'}</td>
-                <td>{s.phone || '—'}</td>
+                <td>{s.phone ? formatPhone(s.phone) : '—'}</td>
                 <td>{s.email || '—'}</td>
                 <td>
                   <Link to={`/admin/fornecedores/${s.id}`} className="table-action-link">

@@ -95,9 +95,14 @@ export default function ProductList() {
           <p className="eyebrow">Catálogo</p>
           <h2>Produtos</h2>
         </div>
-        <Link to="/admin/produtos/novo" className="seal-button">
-          + Novo produto
-        </Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link to="/admin/relatorios/produtos" className="ghost-button">
+            Relatório
+          </Link>
+          <Link to="/admin/produtos/novo" className="seal-button">
+            + Novo produto
+          </Link>
+        </div>
       </div>
 
       <div className="list-toolbar">

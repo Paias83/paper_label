@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import type { Order } from '../../lib/supabase'
 import { advanceOnEnter } from '../../lib/formNav'
 import { callShippingLabel, type LabelLinks } from '../../lib/shippingLabel'
+import { formatDocument } from '../../lib/cpf'
+import { formatPhone } from '../../lib/phone'
 
 type Volume = { height: number; width: number; length: number; weight: number }
 
@@ -46,7 +48,11 @@ export default function ShippingLabelModal({ order, onClose, onBought }: Props) 
     callShippingLabel<Preview>('preview', order.id)
       .then((data) => {
         setPreview(data)
-        setRecipient(data.recipient)
+        setRecipient({
+          ...data.recipient,
+          document: formatDocument(data.recipient.document),
+          phone: formatPhone(data.recipient.phone),
+        })
         selectService(data, data.selected_service_id)
       })
       .catch((err) => setLoadError(err.message))
@@ -198,14 +204,14 @@ export default function ShippingLabelModal({ order, onClose, onBought }: Props) 
                 placeholder="CPF"
                 inputMode="numeric"
                 value={recipient.document}
-                onChange={(e) => setRecipient((prev) => ({ ...prev, document: e.target.value }))}
+                onChange={(e) => setRecipient((prev) => ({ ...prev, document: formatDocument(e.target.value) }))}
                 required
               />
               <input
                 placeholder="Telefone"
                 inputMode="tel"
                 value={recipient.phone}
-                onChange={(e) => setRecipient((prev) => ({ ...prev, phone: e.target.value }))}
+                onChange={(e) => setRecipient((prev) => ({ ...prev, phone: formatPhone(e.target.value) }))}
               />
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--charcoal)', margin: '0 0 16px' }}>

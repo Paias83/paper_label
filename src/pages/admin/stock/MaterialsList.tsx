@@ -37,6 +37,9 @@ export default function MaterialsList() {
           <h2>Matérias-primas</h2>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <Link to="/admin/relatorios/materias-primas" className="ghost-button">
+            Relatório
+          </Link>
           <Link to="/admin/estoque/movimentacoes" className="ghost-button">
             Movimentações
           </Link>

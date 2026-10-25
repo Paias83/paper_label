@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, type Supplier } from '../../../lib/supabase'
 import CurrencyInput from '../../../components/CurrencyInput'
 import { advanceOnEnter } from '../../../lib/formNav'
+import { findDuplicateMaterial } from '../../../lib/duplicates'
+import { titleCase } from '../../../lib/textCase'
 
 const UNITS = ['un', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'cx', 'pct', 'kWh', 'hora']
 
@@ -53,38 +55,32 @@ export default function MaterialForm() {
       })
   }, [id, isEditing])
 
-  const norm = (v: string | null | undefined) => (v ?? '').trim().toLowerCase()
-
-  // Bloqueia cadastro repetido: mesmo nome + mesma cor + mesma marca.
-  async function isDuplicate() {
-    const { data } = await supabase
-      .from('raw_materials')
-      .select('id, name, color, brand')
-      .ilike('name', form.name.trim())
-    return (data ?? []).some(
-      (m) =>
-        m.id !== id &&
-        norm(m.name) === norm(form.name) &&
-        norm(m.color) === norm(form.color) &&
-        norm(m.brand) === norm(form.brand)
-    )
-  }
-
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    const name = titleCase(form.name)
+    const color = titleCase(form.color)
+    const brand = titleCase(form.brand)
+    if (!name) {
+      alert('Informe o nome da matéria-prima.')
+      return
+    }
     setSaving(true)
 
-    if (await isDuplicate()) {
+    // Bloqueia cadastro repetido: mesmo nome + mesma cor + mesma marca
+    // (sem diferenciar maiúsculas, acentos e espaços).
+    const duplicate = await findDuplicateMaterial({ name, color, brand }, id)
+    if (duplicate) {
       setSaving(false)
-      alert('Já existe uma matéria-prima com esse nome, cor e marca.')
+      alert(`Já existe uma matéria-prima com esse nome, cor e marca: ${duplicate}.`)
       return
     }
 
     const payload = {
       ...form,
+      name,
       supplier_id: form.supplier_id || null,
-      color: form.color || null,
-      brand: form.brand || null,
+      color: color || null,
+      brand: brand || null,
     }
 
     if (isEditing) {
@@ -153,6 +149,7 @@ export default function MaterialForm() {
             type="text"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
+            onBlur={() => setForm((f) => ({ ...f, name: titleCase(f.name) }))}
             required
           />
         </div>
@@ -167,6 +164,7 @@ export default function MaterialForm() {
               type="text"
               value={form.color ?? ''}
               onChange={(e) => setForm({ ...form, color: e.target.value })}
+              onBlur={() => setForm((f) => ({ ...f, color: titleCase(f.color) }))}
             />
           </div>
           <div className="form-field">
@@ -178,6 +176,7 @@ export default function MaterialForm() {
               type="text"
               value={form.brand ?? ''}
               onChange={(e) => setForm({ ...form, brand: e.target.value })}
+              onBlur={() => setForm((f) => ({ ...f, brand: titleCase(f.brand) }))}
             />
           </div>
         </div>

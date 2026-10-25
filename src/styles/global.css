@@ -2127,7 +2127,7 @@ a { color: inherit; }
 }
 
 /* =======================================================
-   Relatório de pedidos (OrderReport)
+   Relatórios (pedidos, produtos, matérias-primas)
    ======================================================= */
 .report-filters {
   flex-direction: row; /* .form-card empilha em coluna */
@@ -2149,6 +2149,11 @@ a { color: inherit; }
   gap: var(--space-2);
   flex-wrap: wrap;
   padding-bottom: 8px;
+}
+.report-sub {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--charcoal);
 }
 .report-items {
   font-size: 0.85rem;
