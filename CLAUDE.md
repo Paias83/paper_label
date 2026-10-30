@@ -123,6 +123,13 @@ logs das Edge Functions no dashboard do Supabase.
   e cadastro no site inteiro. Use a função `public.is_admin()` (`security definer`,
   ver `fix-profiles-admin-policy-recursion.sql`). Nas outras tabelas a subquery em
   `profiles` é segura.
+- Policy de UPDATE "na própria linha" libera **todas as colunas**. Em `profiles`, o
+  trigger `protect_profile_privileged_columns` barra o próprio usuário de trocar
+  `role`/`created_by_admin`/`email` (`fix-security-role-and-rpc.sql`; antes disso
+  qualquer cliente virava admin pelo console). Coluna nova sensível → incluir lá.
+- Função `security definer` nova: `revoke ... from public` **não basta** no Supabase
+  (anon/authenticated têm grant direto). Usar
+  `revoke all on function ... from public, anon, authenticated;` + grant explícito.
 - `supabase db query` roda como superuser e **ignora RLS**. Para reproduzir um bug de
   RLS, no mesmo script: `set local role authenticated; set local request.jwt.claims =
   '{"sub":"<uuid>","role":"authenticated"}';` antes da query.
