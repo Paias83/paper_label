@@ -84,13 +84,9 @@ export default function ProductPage() {
         <ArrowLeft size={16} />
         Continuar comprando
       </button>
-      <div style={{ display: 'flex', gap: 40 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <img
-            src={images[selectedImage]}
-            alt={product.name}
-            style={{ width: 320, aspectRatio: '4/5', objectFit: 'cover' }}
-          />
+      <div className="product-detail">
+        <div className="product-gallery">
+          <img className="product-gallery-main" src={images[selectedImage]} alt={product.name} />
           {images.length > 1 && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {images.map((img, index) => (
@@ -115,7 +111,7 @@ export default function ProductPage() {
             </div>
           )}
         </div>
-        <div>
+        <div className="product-info">
           <h1>{product.name}</h1>
           <p className="price" style={{ fontSize: '1.3rem' }}>
             {isCustom ? 'A partir de ' : ''}

@@ -39,9 +39,7 @@ export default function StoreHeader() {
 
   return (
     <header className="site-header">
-      <nav>
-        <NavLink to="/admin">Admin</NavLink>
-      </nav>
+      <nav>{profile?.role === 'admin' && <NavLink to="/admin">Admin</NavLink>}</nav>
       <Link to="/" className="logo">
         Studio Paper
       </Link>
@@ -50,7 +48,7 @@ export default function StoreHeader() {
           <div className="header-account" ref={menuRef}>
             <button className="header-account-trigger" onClick={() => setMenuOpen((open) => !open)}>
               <UserRound size={18} />
-              <span>Olá, {profile?.name || user.email}</span>
+              <span className="header-account-name">Olá, {profile?.name?.split(' ')[0] || user.email}</span>
               {pendingQuotes > 0 && <span className="nav-badge">{pendingQuotes}</span>}
               <ChevronDown size={14} />
             </button>
@@ -86,7 +84,7 @@ export default function StoreHeader() {
         ) : (
           <Link to="/entrar" className="header-action">
             <LogIn size={18} />
-            Entrar / Cadastrar
+            Entrar<span className="hide-mobile"> / Cadastrar</span>
           </Link>
         )}
         <Link to="/carrinho" className="cart-link" aria-label="Ver carrinho">

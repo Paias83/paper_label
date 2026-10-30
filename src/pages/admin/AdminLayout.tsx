@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Menu, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { onAdminBadgesRefresh } from '../../lib/adminBadges'
 
@@ -11,6 +12,12 @@ export default function AdminLayout() {
   const [pendingQuotes, setPendingQuotes] = useState(0)
   const [pendingOrders, setPendingOrders] = useState(0)
   const [pendingNeeds, setPendingNeeds] = useState(0)
+  // No celular o menu vira uma barra no topo que abre/fecha (ver global.css).
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     let active = true
@@ -105,10 +112,24 @@ export default function AdminLayout() {
 
   return (
     <div className="admin-shell">
-      <aside className="admin-sidebar">
-        <div className="admin-brand">
-          Studio Paper
-          <span>Administração</span>
+      <aside className={`admin-sidebar${menuOpen ? ' open' : ''}`}>
+        <div className="admin-sidebar-top">
+          <div className="admin-brand">
+            Studio Paper
+            <span>Administração</span>
+          </div>
+          <button
+            type="button"
+            className="admin-menu-toggle"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            Menu
+            {!menuOpen && pendingOrders + pendingQuotes + pendingNeeds > 0 && (
+              <span className="nav-badge">{pendingOrders + pendingQuotes + pendingNeeds}</span>
+            )}
+          </button>
         </div>
         <nav className="admin-nav">
           <span className="admin-nav-label">Catálogo</span>

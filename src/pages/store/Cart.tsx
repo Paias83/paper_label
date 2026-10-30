@@ -254,7 +254,8 @@ export default function Cart() {
             min={1}
             value={item.quantity}
             onChange={(e) => setQuantity(item.product.id, Number(e.target.value))}
-            style={{ width: 56 }}
+            className="cart-qty"
+            aria-label="Quantidade"
           />
           <button className="cart-item-remove" onClick={() => removeItem(item.product.id)}>
             Remover

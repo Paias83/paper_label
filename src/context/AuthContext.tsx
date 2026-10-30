@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
-type ProfileSummary = { name: string | null }
+type ProfileSummary = { name: string | null; role: 'cliente' | 'admin' }
 
 type AuthContextValue = {
   user: User | null
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (active) setProfile(null)
         return
       }
-      const { data } = await supabase.from('profiles').select('name').eq('id', nextUser.id).single()
+      const { data } = await supabase.from('profiles').select('name, role').eq('id', nextUser.id).single()
       if (active) setProfile(data)
     }
 

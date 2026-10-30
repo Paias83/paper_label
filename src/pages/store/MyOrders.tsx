@@ -79,14 +79,14 @@ export default function MyOrders() {
                   className="order-card-summary"
                   onClick={() => setExpanded(isOpen ? null : o.id)}
                 >
-                  <div>
+                  <div className="order-card-title">
                     <strong>Pedido #{o.id.slice(0, 8)}</strong>
                     <span className="checkout-hint" style={{ margin: 0 }}>
                       {new Date(o.created_at).toLocaleDateString('pt-BR')} ·{' '}
                       {itemCount === 1 ? '1 item' : `${itemCount} itens`}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div className="order-card-meta">
                     <strong className="price">
                       {o.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </strong>
